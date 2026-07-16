@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="email_template_surgery_confirmed" model="mail.template">
+        <field name="name">Surgery Case: Confirmation</field>
+        <field name="model_id" ref="model_clinic_surgery_case"/>
+        <field name="subject">Surgery Confirmed – {{ object.name }}</field>
+        <field name="email_to">{{ object.patient_id.email }}</field>
+        <field name="email_from">{{ (object.surgeon_id.email or user.email) }}</field>
+        <field name="auto_delete" eval="True"/>
+        <field name="body_html" type="html">
+            <div style="font-family: Arial, sans-serif; font-size: 14px; color: #333;">
+                <p>Dear <t t-out="object.patient_id.name or ''"/>,</p>
+
+                <p>We are pleased to confirm your upcoming surgery.</p>
+
+                <table style="border-collapse: collapse; width: 100%; max-width: 500px;">
+                    <tr>
+                        <td style="padding: 4px 8px;"><b>Surgery:</b></td>
+                        <td style="padding: 4px 8px;"><t t-out="object.procedure_id.name or ''"/></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 4px 8px;"><b>Doctor:</b></td>
+                        <td style="padding: 4px 8px;"><t t-out="object.surgeon_id.name or ''"/></td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 4px 8px;"><b>Date &amp; Time:</b></td>
+                        <td style="padding: 4px 8px;">
+                            <t t-out="format_date(object.surgery_date) if object.surgery_date else 'TBC'"/>
+                            <t t-if="object.surgery_time_slot"> at <t t-out="object.surgery_time_slot"/></t>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 4px 8px;"><b>Location:</b></td>
+                        <td style="padding: 4px 8px;"><t t-out="object.hospital_location_id.name or 'TBC'"/></td>
+                    </tr>
+                </table>
+
+                <p>If any of the details above are incorrect, or if you have any questions,
+                   please contact us as soon as possible.</p>
+
+                <p>Kind regards,<br/>
+                   <b><t t-out="object.surgeon_id.name or 'The Medical Team'"/></b></p>
+
+                <p style="font-size: 11px; color: #888;">
+                    If you have any questions, please do not hesitate to contact us.
+                </p>
+            </div>
+        </field>
+    </record>
+</odoo>

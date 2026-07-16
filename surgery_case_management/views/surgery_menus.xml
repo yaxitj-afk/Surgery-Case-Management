@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <!-- ═══════════════════════════════════════════════════════════
+         ACTION — opens res.config.settings filtered to our app
+         Mirrors exactly how base_setup does it:
+         context module key must match the `name` on your <app> tag
+    ═══════════════════════════════════════════════════════════ -->
+    <record id="action_surgery_config_settings" model="ir.actions.act_window">
+        <field name="name">Settings</field>
+        <field name="res_model">res.config.settings</field>
+        <field name="view_mode">form</field>
+        <field name="context">
+            {'module': 'surgery_case_management', 'bin_size': False}
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         ROOT MENU — Surgery Cases 
+    ═══════════════════════════════════════════════════════════ -->
+    <menuitem id="menu_surgery_case_management_root"
+              name="Surgery Cases"
+              sequence="10" web_icon="surgery_case_management,static/description/icon.png"/>
+    <menuitem id="menu_clinic_surgery_case"
+              name="Surgery Cases"
+              parent="menu_surgery_case_management_root"
+              action="action_clinic_surgery_case"
+              sequence="10"/>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         CONFIGURATION parent menu  (second-level under the root)
+    ═══════════════════════════════════════════════════════════ -->
+    <menuitem id="menu_surgery_configuration"
+              name="Configuration"
+              parent="menu_surgery_case_management_root"
+              sequence="90"
+              groups="base.group_system"/>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         SETTINGS submenu  — opens res.config.settings on our app
+    ═══════════════════════════════════════════════════════════ -->
+    <menuitem id="menu_surgery_settings"
+              name="Settings"
+              parent="menu_surgery_configuration"
+              action="action_surgery_config_settings"
+              sequence="10"
+              groups="base.group_system"/>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         SURGERY PROCEDURES 
+    ═══════════════════════════════════════════════════════════ -->
+    <menuitem id="menu_surgery_procedures_config"
+              name="Surgery Procedures"
+              parent="menu_surgery_case_management_root"
+              action="action_clinic_surgery_procedure"
+              sequence="20"/>
+
+</odoo>

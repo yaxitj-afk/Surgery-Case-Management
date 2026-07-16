@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_partner_mediris_form_inherit" model="ir.ui.view">
+        <field name="name">res.partner.mediris.form.inherit</field>
+        <field name="model">res.partner</field>
+        <field name="inherit_id" ref="base.view_partner_form"/>
+        <field name="arch" type="xml">
+
+            <notebook position="inside">
+                <page string="Mediris Patient Info" name="mediris_info">
+
+                    <!-- Patient Identity -->
+                    <group string="Patient Identity">
+                        <group>
+                            <field name="mediris_patient_id"/>
+                            <field name="mediris_age"/>
+                            <field name="mediris_spoken_language"/>
+                            <field name="mediris_general_practitioner"/>
+                        </group>
+                        <group>
+                            <field name="mediris_creation_date"/>
+                            <field name="mediris_archived"/>
+                            <field name="mediris_date_of_death"/>
+                        </group>
+                    </group>
+
+                    <!-- Insurance / Mutual Fund -->
+                    <group string="Insurance &amp; Mutual Fund">
+                        <group>
+                            <field name="mediris_mutual_fund_name"/>
+                            <field name="mediris_mutual_fund_code"/>
+                            <field name="mediris_insurance_category"/>
+                            <field name="mediris_insurability_status"/>
+                        </group>
+                        <group>
+                            <field name="mediris_supplement_allowed"/>
+                            <field name="mediris_last_mutual_check_date"/>
+                        </group>
+                    </group>
+
+                    <!-- GMD (Global Medical Dossier) -->
+                    <group string="GMD (Global Medical Dossier)">
+                        <group>
+                            <field name="mediris_gmd_start_date"/>
+                            <field name="mediris_gmd_end_date"/>
+                        </group>
+                        <group>
+                            <field name="mediris_gmd_gp"/>
+                        </group>
+                    </group>
+
+                    <!-- Sumehr -->
+                    <group string="Sumehr">
+                        <group>
+                            <field name="mediris_sumehr_date"/>
+                            <field name="mediris_sumehr_author"/>
+                        </group>
+                        <group>
+                            <field name="mediris_sumehr_shared"/>
+                        </group>
+                    </group>
+
+                </page>
+            </notebook>
+
+        </field>
+    </record>
+
+</odoo>

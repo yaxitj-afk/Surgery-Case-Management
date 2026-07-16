@@ -1,0 +1,626 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         SURGERY CASE FORM
+    ═══════════════════════════════════════════════════════════ -->
+    <record id="view_clinic_surgery_case_form" model="ir.ui.view">
+        <field name="name">clinic.surgery.case.form</field>
+        <field name="model">clinic.surgery.case</field>
+        <field name="arch" type="xml">
+            <form string="Surgery Case">
+                <header>
+                    <button name="action_generate_tasks"
+                            string="Generate Tasks"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="tasks_generated == True or state != 'confirmed'"/>
+                    <button name="action_confirm" string="Confirm"
+                            type="object" class="btn-primary"
+                            invisible="state != 'draft'"/>
+                    <button name="action_send_consent"
+                            string="Send Consent for Signature"
+                            type="object"
+                            class="btn-primary"
+                            invisible="state != 'planned' or consent_required"/>
+                    <button name="action_send_brochure"
+                            string="Send Info Brochure"
+                            type="object"
+                            class="btn-secondary"
+                            invisible="not brochure_available or info_brochure_sent or state != 'planned'"
+                            confirm="This will send the procedure information brochure to the patient's email. Continue?"/>
+                    <button name="%(surgery_case_management.action_admission_document_wizard)d"
+                            string="Admission Document" type="action" class="btn-secondary"
+                            invisible="state != 'confirmed'"/>
+                    <button name="action_create_invoice"
+                            string="Create Invoice"
+                            type="object"
+                            class="btn-primary"
+                            invisible="invoice_exists or not procedure_id or doctor_fee &lt;= 0 or state != 'in_progress' or is_reimbursed_surgery"/>
+                    <button name="action_create_reimbursed_invoice"
+                            string="Create Supplement Invoice"
+                            type="object"
+                            class="btn-primary"
+                            invisible="invoice_exists or not is_reimbursed_surgery or reimbursed_supplement_amount &lt;= 0 or state != 'in_progress'"/>
+                    <button name="action_mark_surgery_completed"
+                            string="Surgery Completed"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="state != 'in_progress' or invoice_payment_state not in ('in_payment','paid')"/>
+                    <button name="action_sync_postop_schedule" type="object"
+                            string="Sync Post-op Schedule" class="btn-secondary"
+                            invisible="state != 'surgery_completed'"/>
+                    <button name="action_receive_settlement"
+                            string="Receive Settlement"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="state != 'post_follow_ups' or is_reimbursed_surgery"/>
+
+                    <button name="action_confirm_physical_consent"
+                            type="object" string="Confirm Physical Signature"
+                            class="btn-primary mt-2"
+                            invisible="not physical_consent_attachment_ids or (sign_request_ids and patient_consent_signed and doctor_consent_signed and is_physical_consent)"/>
+
+                    <button name="action_mark_done"
+                            string="Done"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="state != 'post_follow_ups' or not is_reimbursed_surgery"/>
+
+                    <button name="action_cancel"
+                            string="Cancel Surgery"
+                            type="object"
+                            class="btn-danger"
+                            invisible="state not in ('confirmed', 'planned', 'in_progress')"
+                            confirm="Are you sure you want to cancel this surgery? All open tasks will be closed."/>
+                    <button name="action_reset_to_draft" type="object" string="Reset to Draft" class="btn-secondary"
+                            invisible="state != 'cancelled'"/>
+                    <button name="action_generate_postop_tasks"
+                            type="object"
+                            string="Generate Post-op Task"
+                            class="btn-primary"
+                            invisible="state != 'surgery_completed'"/>
+                    <button name="action_reschedule" type="object" string="Reschedule"
+                            class="btn-secondary"
+                            invisible="state not in ('planned', 'in_progress')"/>
+                    <button name="action_submit_reschedule" type="object" string="Submit"
+                            class="btn-primary"
+                            invisible="state != 'reschedule'"/>
+                    <field name="state"
+                           widget="statusbar"
+                           statusbar_visible="draft,confirmed,planned,in_progress,surgery_completed,post_follow_ups,done"/>
+                </header>
+
+                <sheet>
+                    <!-- ── Smart buttons ── -->
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_tasks"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-tasks">
+                            <field name="task_count" widget="statinfo" string="Tasks"/>
+                        </button>
+                        <button name="action_view_consents"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-pencil-square-o">
+                            <field name="consent_count" widget="statinfo" string="Consents"/>
+                        </button>
+                        <button name="action_view_invoice"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-file-text-o"
+                                invisible="not invoice_exists">
+                            <field name="invoice_count" widget="statinfo"
+                                   string="Invoice"/>
+                        </button>
+                        <button name="action_view_case_dashboard"
+                                type="object"
+                                class="oe_stat_button"
+                                icon="fa-dashboard">
+                            <div class="o_stat_info">
+                                <span class="o_stat_text">Dashboard</span>
+                            </div>
+                        </button>
+                    </div>
+
+                    <!-- ── 7.2 Surgery At Risk ribbon ── -->
+                    <widget name="web_ribbon"
+                            title="⚠️ SURGERY AT RISK"
+                            bg_color="bg-danger"
+                            invisible="not surgery_at_risk"/>
+                    <widget name="web_ribbon"
+                            title="Consent Overdue"
+                            bg_color="bg-danger"
+                            invisible="consent_status != 'overdue' or surgery_at_risk or state != 'planned'"/>
+                    <widget name="web_ribbon"
+                            title="Consent Signed"
+                            bg_color="bg-success"
+                            invisible="consent_status != 'signed' or state != 'in_progress'"/>
+                    <widget name="web_ribbon"
+                            title="Fee Unpaid"
+                            bg_color="bg-warning"
+                            invisible="not invoice_exists or honorarium_paid or invoice_payment_state in ('in_payment','paid')"/>
+                    <widget name="web_ribbon"
+                            title="Fee Paid"
+                            bg_color="text-bg-success"
+                            invisible="state != 'in_progress' or not invoice_exists or invoice_payment_state not in ('in_payment', 'paid')"/>
+
+                    <div invisible="not surgery_at_risk"
+                         class="alert alert-danger d-flex align-items-center gap-2 mt-2 mb-0 py-2">
+                        <i class="fa fa-exclamation-triangle fa-lg"/>
+                        <span>
+                            <b>Surgery at risk :</b>
+                            <field name="surgery_at_risk_reason" readonly="1"/>
+                        </span>
+                    </div>
+                    <br/>
+
+                    <div class="oe_title">
+                        <div class="alert alert-info" role="alert"
+                             invisible="not admission_document_sent or state not in ('planned','in_progress')">
+                            Admission document sent to the patient.
+                        </div>
+                        <label for="name"/>
+                        <h1>
+                            <field name="name" placeholder="Surgery case reference"
+                                   readonly="state not in ('draft', 'confirmed', 'reschedule')"/>
+                        </h1>
+                        <!-- At-risk reason shown inline under title -->
+                    </div>
+
+                    <group>
+                        <group string="Patient &amp; Procedure">
+                            <field name="patient_id" readonly="state not in ('draft', 'confirmed')"/>
+                            <field name="procedure_id" domain="[('state', '=', 'confirmed')]"
+                                   readonly="state not in ('draft', 'confirmed')"/>
+                            <field name="procedure_location_type" readonly="state not in ('draft', 'confirmed')"/>
+
+                        </group>
+                        <group string="Team">
+                            <field name="surgeon_id" readonly="state not in ('draft', 'confirmed')"/>
+                            <field name="secretary_id" readonly="state not in ('draft', 'confirmed')"/>
+                            <field name="mediris_reference" readonly="state not in ('draft', 'confirmed')"/>
+                            <field name="is_reimbursed_surgery" readonly="state not in ('draft', 'confirmed')"/>
+                            <field name="operating_block_id" domain="[('doctor_id','=',surgeon_id)]"
+                                   options="{'no_create': True}" placeholder="Auto-filled when date is selected"
+                                   invisible="1" readonly="state not in ('draft', 'confirmed')"/>
+                            <field name="available_surgery_dates" invisible="1"
+                                   readonly="state not in ('draft', 'confirmed')"/>
+                        </group>
+                        <group string="Scheduling">
+                            <field name="surgery_date" widget="surgery_date_picker"
+                                   readonly="state not in ('draft', 'confirmed', 'reschedule')"/>
+                            <field name="available_time_slots" invisible="1"
+                                   readonly="state not in ('draft', 'confirmed', 'reschedule')"/>
+                            <field name="surgery_time_slot"
+                                   widget="surgery_time_slot"
+                                   string="Surgery Time" readonly="state not in ('draft', 'confirmed', 'reschedule')"
+                                   invisible="surgery_date == False"/>
+                            <field name="surgery_end_time" readonly="1"/>
+                            <field name="surgery_duration_hours" widget="float_time"
+                                   readonly="state not in ('draft', 'confirmed')"/>
+                        </group>
+                        <group string="Location Details">
+                            <field name="admission_type" readonly="state not in ('draft', 'confirmed')"/>
+                            <field name="admission_point_id" domain="[('admission_type','=',admission_type)]"
+                                   options="{'no_create': True}" readonly="state not in ('draft', 'confirmed')"/>
+                            <field name="hospital_location_id" domain="[('category_id.name', 'ilike', 'ziekenhuis')]"
+                                   widget="res_partner_many2one"
+                                   context="{'res_partner_search_mode': 'customer','show_address': 1,'show_vat': True}"
+                                   readonly="state not in ('draft', 'confirmed')"/>
+                            <field name="admission_time" readonly="state not in ('draft', 'confirmed')"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+
+                        <!-- TAB 1 — Procedure -->
+                        <page string="Procedure" name="procedure">
+                            <group string="Procedure Details" invisible="not procedure_id">
+                                <group>
+                                    <field name="procedure_id" readonly="1"/>
+                                    <field name="procedure_anesthesia_type"/>
+
+                                </group>
+                                <group>
+                                    <field name="procedure_doctor_fee" widget="monetary"/>
+                                    <field name="procedure_hospital_fee" widget="monetary"/>
+                                </group>
+                            </group>
+
+                            <!-- Task Templates -->
+                            <div class="o_horizontal_separator mt-4 mb-2 fw-bold fs-6 text-uppercase text-muted">
+                                Procedure Templates
+                            </div>
+                            <div invisible="procedure_task_ids == []">
+                                <field name="procedure_task_ids" readonly="1" nolabel="1">
+                                    <kanban class="o_kanban_mobile">
+                                        <field name="name"/>
+                                        <field name="responsible"/>
+                                        <field name="deadline_days_before"/>
+                                        <field name="description"/>
+                                        <templates>
+                                            <t t-name="card">
+                                                <div t-attf-style="height:5px;border-radius:8px 8px 0 0;background:#{
+                                                    record.responsible.raw_value == 'doctor' ? '#74b9ff' :
+                                                    record.responsible.raw_value == 'secretary' ? '#fd79a8' :
+                                                    record.responsible.raw_value == 'patient' ? '#55efc4' :
+                                                    '#b2bec3'};"/>
+                                                <div class="p-3">
+                                                    <div class="fw-bold fs-6 mb-2 text-dark">
+                                                        <i class="fa fa-tasks me-1 text-muted"/>
+                                                        <field name="name"/>
+                                                    </div>
+                                                    <div class="mb-2">
+                                                        <span t-attf-class="badge rounded-pill px-2 py-1 #{
+                                                            record.responsible.raw_value == 'doctor' ? 'text-bg-info' :
+                                                            record.responsible.raw_value == 'secretary' ? 'text-bg-danger' :
+                                                            record.responsible.raw_value == 'patient' ? 'text-bg-success' :
+                                                            'text-bg-secondary'}">
+                                                            <i t-attf-class="fa me-1 #{
+                                                                record.responsible.raw_value == 'doctor' ? 'fa-user-md' :
+                                                                record.responsible.raw_value == 'secretary' ? 'fa-user' :
+                                                                record.responsible.raw_value == 'patient' ? 'fa-wheelchair' :
+                                                                'fa-building'}"/>
+                                                            <field name="responsible"/>
+                                                        </span>
+                                                    </div>
+                                                    <div class="d-flex align-items-center gap-2 mb-2 text-muted small">
+                                                        <i class="fa fa-calendar me-1"/>
+                                                        <span t-if="record.deadline_days_before.raw_value >= 0">
+                                                            <field name="deadline_days_before"/>
+                                                            days before surgery
+                                                        </span>
+                                                        <span t-if="record.deadline_days_before.raw_value &lt; 0">
+                                                            <field name="deadline_days_before"/>
+                                                            days after surgery
+                                                        </span>
+                                                    </div>
+                                                    <div t-if="record.description.raw_value"
+                                                         class="text-muted small border-top pt-2 mt-2">
+                                                        <i class="fa fa-info-circle me-1"/>
+                                                        <field name="description"/>
+                                                    </div>
+                                                </div>
+                                            </t>
+                                        </templates>
+                                    </kanban>
+                                </field>
+                            </div>
+                            <div invisible="procedure_task_ids != []"
+                                 class="alert alert-warning mb-3">
+                                <i class="fa fa-exclamation-circle me-1"/>
+                                No task templates configured for this procedure.
+                            </div>
+
+                        </page>
+
+                        <!-- TAB 2 — Consent -->
+                        <page string="Consent" name="consent">
+                            <group>
+                                <group string="Consent Settings">
+                                    <field name="consent_required"/>
+                                    <field name="consent_deadline" readonly="0"/>
+
+                                    <field name="is_physical_consent" readonly="consent_status == 'signed'"/>
+                                </group>
+                                <group string="Status">
+                                    <field name="consent_status" widget="badge"
+                                           decoration-danger="consent_status == 'overdue'"
+                                           decoration-success="consent_status == 'signed'"
+                                           decoration-warning="consent_status == 'sent'"
+                                           decoration-secondary="consent_status == 'none'"/>
+                                    <field name="patient_consent_signed" invisible="1"/>
+                                    <label for="patient_consent_signed" string="Patient Signature"/>
+                                    <div class="o_row">
+                                        <i class="fa fa-check-circle text-success me-1"
+                                           invisible="not patient_consent_signed"/>
+                                        <i class="fa fa-clock-o text-warning me-1" invisible="patient_consent_signed"/>
+                                        <span invisible="not patient_consent_signed">Signed</span>
+                                        <span invisible="patient_consent_signed" class="text-muted">Pending</span>
+                                    </div>
+                                    <field name="doctor_consent_signed" invisible="1"/>
+                                    <label for="doctor_consent_signed" string="Doctor Signature"/>
+                                    <div class="o_row">
+                                        <i class="fa fa-check-circle text-success me-1"
+                                           invisible="not doctor_consent_signed"/>
+                                        <i class="fa fa-clock-o text-warning me-1" invisible="doctor_consent_signed"/>
+                                        <span invisible="not doctor_consent_signed">Signed</span>
+                                        <span invisible="doctor_consent_signed" class="text-muted">Pending</span>
+                                    </div>
+                                    <field name="doctor_pending_signature" invisible="1"/>
+                                    <label for="procedure_sign_template_ids" string="Consent Templates"/>
+                                    <div class="o_row">
+                                        <field name="procedure_sign_template_ids" readonly="1" widget="many2many_tags"/>
+                                        <button name="action_download_consent_templates"
+                                                type="object" string="Download" icon="fa-download" class="btn-link"
+                                                invisible="not procedure_sign_template_ids"/>
+                                    </div>
+                                </group>
+                            </group>
+
+                            <group string="Physical Consent" invisible="not is_physical_consent">
+                                <field name="physical_consent_attachment_ids" widget="many2many_binary"
+                                       readonly="consent_status == 'signed'"
+                                       options="{'accepted_file_extensions': '.pdf'}" nolabel="1"/>
+                            </group>
+                        </page>
+
+                        <!-- TAB 3 — Financials -->
+                        <page string="Financials" name="financials" invisible="is_reimbursed_surgery">
+                            <group string="Fees">
+                                <group>
+                                    <field name="doctor_fee" widget="monetary"
+                                           help="Tax-included amount. Tax is calculated automatically from the procedure's product taxes at invoicing time."/>
+                                    <field name="invoice_payment_state" widget="badge"
+                                           decoration-success="invoice_payment_state == 'paid'"
+                                           decoration-warning="invoice_payment_state in ('in_payment','partial')"
+                                           decoration-danger="invoice_payment_state == 'not_paid'"/>
+
+                                </group>
+                                <group>
+                                    <field name="hospital_fee" widget="monetary"/>
+                                    <field name="expected_settlement" widget="monetary"/>
+
+                                </group>
+                            </group>
+
+                            <group string="Extra Fee">
+                                <group>
+                                    <field name="extra_fee_enabled"/>
+                                </group>
+                                <group>
+                                    <field name="extra_fee_description"
+                                           invisible="not extra_fee_enabled"
+                                           required="extra_fee_enabled"
+                                           placeholder="e.g. Implant surcharge"/>
+                                    <field name="extra_fee_amount" widget="monetary"
+                                           invisible="not extra_fee_enabled"
+                                           required="extra_fee_enabled"
+                                           help="Tax-included amount, added to the doctor fee invoice as its own line."/>
+                                </group>
+                            </group>
+
+                            <group string="Payment Tracking">
+                                <group>
+                                    <field name="prepayment_required" invisible="1"/>
+                                    <field name="hospital_fee_paid"/>
+                                    <field name="hospital_fee_due_date" readonly="1"/>
+                                </group>
+                                <group>
+                                    <field name="honorarium_paid"/>
+                                    <field name="honorarium_payment_method"/>
+                                </group>
+                            </group>
+
+                            <group string="Email Automation">
+                                <group>
+                                    <field name="preop_email_sent" readonly="1"/>
+                                    <field name="review_request_sent" readonly="1"/>
+                                </group>
+                                <group>
+                                    <!-- 7.7 opt-in toggle per case -->
+                                    <field name="send_review_request"/>
+                                    <field name="info_brochure_sent"/>
+                                    <field name="review_request_email"
+                                           invisible="not send_review_request"
+                                           readonly="0"
+                                           placeholder="e.g. patient@email.com"/>
+                                </group>
+                            </group>
+                        </page>
+
+                        <!-- TAB 3b — Reimbursed Financials -->
+                        <page string="Reimbursed Financials" name="reimbursed_financials"
+                              invisible="not is_reimbursed_surgery">
+                            <group string="Supplement (payable directly to the practice)">
+                                <group>
+                                    <field name="reimbursed_supplement_description"
+                                           placeholder="e.g. Esthetisch supplement"/>
+                                    <field name="reimbursed_supplement_amount" widget="monetary"/>
+                                </group>
+                                <group>
+                                    <field name="invoice_exists" invisible="1"/>
+                                    <field name="invoice_payment_state" widget="badge"
+                                           invisible="not invoice_exists"
+                                           decoration-success="invoice_payment_state == 'paid'"
+                                           decoration-warning="invoice_payment_state in ('in_payment','partial')"
+                                           decoration-danger="invoice_payment_state == 'not_paid'"/>
+                                </group>
+                            </group>
+                            <div class="alert alert-info" role="alert">
+                                This surgery is reimbursed : Only the optional supplement above (if any) is invoiced,
+                                and it is paid directly to the practice.
+                            </div>
+                        </page>
+
+                        <page string="Post-op Consults" name="postop_consults">
+                            <field name="additional_procedure_ids" widget="many2many_tags"
+                                   placeholder="Add if procedures are combined in one operation..." invisible="1"/>
+                            <field name="postop_consult_ids">
+                                <list editable="bottom" decoration-muted="is_consolidated_away">
+                                    <field name="source_procedure_id" string="From Procedure" readonly="1"/>
+                                    <field name="label"/>
+                                    <field name="is_fixed" string="Fixed Day?"/>
+                                    <field name="planned_date"
+                                           string="Planned Date / Window Midpoint"/>
+                                    <field name="responsible_id"/>
+                                    <field name="window_days" string="Window ± days"
+                                           invisible="is_fixed"/>
+                                    <field name="window_start_date" readonly="1"
+                                           invisible="is_fixed"/>
+                                    <field name="window_end_date" readonly="1"
+                                           invisible="is_fixed"/>
+                                    <field name="mediris_booked" string="Booked in Mediris"/>
+                                    <field name="consult_done" string="Done"/>
+                                    <field name="is_consolidated_away" column_invisible="1"/>
+                                    <field name="notes"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- TAB 6 — Notes -->
+                        <page string="Notes" name="notes_tab">
+                            <field name="notes" placeholder="Internal notes…"/>
+                        </page>
+
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         SURGERY CASE KANBAN
+    ═══════════════════════════════════════════════════════════ -->
+    <record id="view_clinic_surgery_case_kanban" model="ir.ui.view">
+        <field name="name">clinic.surgery.case.kanban</field>
+        <field name="model">clinic.surgery.case</field>
+        <field name="arch" type="xml">
+            <kanban default_group_by="state" class="o_kanban_small_column">
+                <field name="name"/>
+                <field name="patient_id"/>
+                <field name="procedure_id"/>
+                <field name="surgeon_id"/>
+                <field name="surgery_date"/>
+                <field name="state"/>
+                <field name="consent_status"/>
+                <field name="surgery_at_risk"/>
+                <field name="surgery_at_risk_reason"/>
+                <field name="invoice_exists"/>
+                <field name="invoice_payment_state"/>
+                <progressbar field="state"
+                             colors='{"draft": "muted", "planned": "info", "in_progress": "warning", "surgery_completed": "success", "post_follow_ups": "success", "done": "success", "cancelled": "danger"}'/>
+                <templates>
+                    <t t-name="card">
+                        <div t-attf-class="oe_kanban_card oe_kanban_global_click #{record.surgery_at_risk.raw_value ? 'border-danger' : ''}">
+
+                            <!-- Header: name + risk ribbon -->
+                            <div class="d-flex justify-content-between align-items-start mb-1">
+                                <strong class="o_kanban_record_title">
+                                    <field name="name"/>
+                                </strong>
+                                <span t-if="record.surgery_at_risk.raw_value"
+                                      class="badge text-bg-danger"
+                                      title="Surgery at risk">
+                                    <i class="fa fa-exclamation-triangle"/>
+                                </span>
+                            </div>
+
+                            <!-- Patient / procedure -->
+                            <div class="text-muted small mb-1">
+                                <i class="fa fa-user-o me-1"/>
+                                <field name="patient_id"/>
+                            </div>
+                            <div class="text-muted small mb-2">
+                                <i class="fa fa-medkit me-1"/>
+                                <field name="procedure_id"/>
+                            </div>
+
+                            <!-- Surgery date -->
+                            <div class="mb-2" t-if="record.surgery_date.raw_value">
+                                <i class="fa fa-calendar me-1 text-muted"/>
+                                <field name="surgery_date"/>
+                            </div>
+                            <div class="mb-2 text-muted fst-italic" t-if="!record.surgery_date.raw_value">
+                                No date set
+                            </div>
+
+                            <!-- Status badges row -->
+                            <div class="d-flex flex-wrap gap-1 mb-2">
+                                <span t-attf-class="badge #{record.consent_status.raw_value == 'signed' ? 'text-bg-success' : record.consent_status.raw_value == 'overdue' ? 'text-bg-danger' : record.consent_status.raw_value == 'sent' ? 'text-bg-warning' : 'text-bg-secondary'}">
+                                    IC:
+                                    <field name="consent_status"/>
+                                </span>
+                                <span t-if="record.invoice_exists.raw_value"
+                                      t-attf-class="badge #{record.invoice_payment_state.raw_value == 'paid' ? 'text-bg-success' : record.invoice_payment_state.raw_value == 'not_paid' ? 'text-bg-danger' : 'text-bg-warning'}">
+                                    <i class="fa fa-file-text-o me-1"/>
+                                    <field name="invoice_payment_state"/>
+                                </span>
+                            </div>
+
+                            <!-- Footer: surgeon avatar -->
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span class="text-muted small">
+                                    <field name="surgeon_id"/>
+                                </span>
+                                <field name="surgeon_id" widget="many2one_avatar_user"/>
+                            </div>
+
+                        </div>
+                    </t>
+                </templates>
+            </kanban>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════
+     SURGERY CASE CALENDAR
+    ═══════════════════════════════════════════════════════════ -->
+    <record id="view_clinic_surgery_case_calendar" model="ir.ui.view">
+        <field name="name">clinic.surgery.case.calendar</field>
+        <field name="model">clinic.surgery.case</field>
+        <field name="arch" type="xml">
+            <calendar string="Surgery Schedule"
+                      date_start="surgery_datetime_start"
+                      date_stop="surgery_datetime_stop"
+                      color="surgeon_id"
+                      mode="week"
+                      event_open_popup="true">
+                <field name="patient_id"/>
+                <field name="procedure_id"/>
+                <field name="surgeon_id"/>
+            </calendar>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         SURGERY CASE LIST
+    ═══════════════════════════════════════════════════════════ -->
+    <record id="view_clinic_surgery_case_list" model="ir.ui.view">
+        <field name="name">clinic.surgery.case.list</field>
+        <field name="model">clinic.surgery.case</field>
+        <field name="arch" type="xml">
+            <list string="Surgery Cases"
+                  decoration-danger="surgery_at_risk == True or consent_status == 'overdue'"
+                  decoration-success="state == 'done'"
+                  decoration-muted="state == 'cancelled'">
+                <field name="name"/>
+                <field name="patient_id"/>
+                <field name="procedure_id"/>
+                <field name="surgeon_id"/>
+                <field name="surgery_date"/>
+                <field name="state" widget="badge"
+                       decoration-success="state == 'done'"
+                       decoration-info="state == 'planned'"
+                       decoration-warning="state == 'in_progress'"
+                       decoration-danger="state in ('draft', 'cancelled')"/>
+                <field name="consent_status" widget="badge"
+                       decoration-danger="consent_status == 'overdue'"
+                       decoration-success="consent_status == 'signed'"
+                       decoration-warning="consent_status == 'sent'"
+                       decoration-info="consent_status == 'none'"/>
+                <field name="surgery_at_risk" widget="boolean"
+                       string="At Risk" optional="show"/>
+                <field name="surgery_at_risk_reason" optional="show"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         ACTIONS + MENUS
+    ═══════════════════════════════════════════════════════════ -->
+    <record id="action_clinic_surgery_case" model="ir.actions.act_window">
+        <field name="name">Surgery Cases</field>
+        <field name="res_model">clinic.surgery.case</field>
+        <field name="view_mode">kanban,list,calendar,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first surgery case
+            </p>
+        </field>
+    </record>
+
+</odoo>

@@ -1,0 +1,247 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- Dashboard form -->
+    <record id="view_clinic_postop_followup_form" model="ir.ui.view">
+        <field name="name">clinic.postop.followup.form</field>
+        <field name="model">clinic.postop.followup</field>
+        <field name="arch" type="xml">
+            <form string="Post-op Follow-up">
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button name="action_view_consults" type="object"
+                                class="oe_stat_button" icon="fa-stethoscope">
+                            <field name="consult_count" widget="statinfo" string="Consults"/>
+                        </button>
+                        <button name="action_view_pending_consults" type="object"
+                                class="oe_stat_button" icon="fa-clock-o"
+                                invisible="consult_pending_count == 0">
+                            <field name="consult_pending_count" widget="statinfo" string="Pending"/>
+                        </button>
+                    </div>
+
+                    <div class="oe_title">
+                        <label for="patient_id"/>
+                        <h1><field name="patient_id" options="{'no_create': True}"/></h1>
+                    </div>
+
+                    <group>
+                        <group string="Surgeries">
+                            <field name="surgery_case_ids" widget="many2many_tags" readonly="1"/>
+                        </group>
+                        <group string="Progress">
+                            <field name="consult_count"/>
+                            <field name="consult_done_count"/>
+                            <field name="consult_pending_count"
+                                   decoration-danger="consult_pending_count > 0"
+                                   decoration-success="consult_pending_count == 0"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Post-op Consults" name="postop_consults">
+                            <field name="postop_consult_ids" readonly="0">
+                                <list editable="bottom"
+                                      decoration-success="consult_done"
+                                      decoration-muted="not is_fixed">
+                                    <field name="surgery_case_id"/>
+                                    <field name="source_procedure_id"/>
+                                    <field name="label"/>
+                                    <field name="planned_date"/>
+                                    <field name="is_fixed" widget="boolean_toggle"/>
+                                    <field name="mediris_booked" widget="boolean_toggle"/>
+                                    <field name="consult_done" widget="boolean_toggle"/>
+                                    <field name="notes"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+
+                <!-- Remove if clinic.postop.followup doesn't inherit mail.thread -->
+                <chatter/>
+            </form>
+        </field>
+    </record>
+    <!-- <record id="view_clinic_postop_followup_form" model="ir.ui.view">
+        <field name="name">clinic.postop.followup.form</field>
+        <field name="model">clinic.postop.followup</field>
+        <field name="arch" type="xml">
+            <form string="Post-op Follow-up">
+                <sheet>
+                    <div class="oe_title">
+                        <label for="patient_id"/>
+                        <h1><field name="patient_id" options="{'no_create': True}"/></h1>
+                    </div>
+                    <group>
+                        <group>
+                            <field name="surgery_case_ids" widget="many2many_tags" readonly="1"/>
+                        </group>
+                        <group>
+                            <field name="consult_count"/>
+                            <field name="consult_done_count"/>
+                            <field name="consult_pending_count"/>
+                        </group>
+                    </group>
+                    <notebook>
+                        <page string="Post-op Consults" name="postop_consults">
+                            <field name="postop_consult_ids" readonly="0">
+                                <list editable="bottom">
+                                    <field name="surgery_case_id"/>
+                                    <field name="source_procedure_id"/>
+                                    <field name="label"/>
+                                    <field name="planned_date"/>
+                                    <field name="is_fixed"/>
+                                    <field name="mediris_booked"/>
+                                    <field name="consult_done"/>
+                                    <field name="notes"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record> -->
+
+    <record id="view_clinic_postop_followup_list" model="ir.ui.view">
+        <field name="name">clinic.postop.followup.list</field>
+        <field name="model">clinic.postop.followup</field>
+        <field name="arch" type="xml">
+            <list string="Post-op Follow-ups">
+                <field name="patient_id"/>
+                <field name="consult_count"/>
+                <field name="consult_done_count"/>
+                <field name="consult_pending_count"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="view_clinic_postop_followup_search" model="ir.ui.view">
+        <field name="name">clinic.postop.followup.search</field>
+        <field name="model">clinic.postop.followup</field>
+        <field name="arch" type="xml">
+            <search string="Post-op Follow-ups">
+                <field name="patient_id"/>
+                <filter string="Has Pending Consults" name="filter_pending"
+                        domain="[('consult_pending_count','&gt;',0)]"/>
+                <filter string="Fully Done" name="filter_all_done"
+                        domain="[('consult_pending_count','=',0),('consult_count','&gt;',0)]"/>
+                <filter string="Patient" name="group_patient" context="{'group_by':'patient_id'}"/>
+            </search>
+        </field>
+    </record>
+
+    <record id="action_clinic_postop_followup" model="ir.actions.act_window">
+        <field name="name">Post-Op Consultation</field>
+        <field name="res_model">clinic.postop.followup</field>
+        <field name="view_mode">list,form</field>
+        <field name="search_view_id" ref="view_clinic_postop_followup_search"/>
+    </record>
+
+    <record id="view_clinic_postop_consult_list" model="ir.ui.view">
+        <field name="name">clinic.postop.consult.list</field>
+        <field name="model">clinic.postop.consult</field>
+        <field name="arch" type="xml">
+            <list string="Post-op Consults" default_order="patient_id, planned_date">
+                <field name="patient_id"/>
+                <field name="surgery_case_id"/>
+                <field name="label"/>
+                <field name="planned_date"/>
+                <field name="consult_done"/>
+                <field name="mediris_booked"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- Search view for clinic.postop.consult (event-level, real calendar/pivot) -->
+    <record id="view_clinic_postop_consult_search" model="ir.ui.view">
+        <field name="name">clinic.postop.consult.search</field>
+        <field name="model">clinic.postop.consult</field>
+        <field name="arch" type="xml">
+            <search string="Post-op Consults">
+                <field name="patient_id"/>
+                <field name="surgery_case_id"/>
+                <field name="label"/>
+                <filter string="Surgery Completed" name="filter_completed"
+                        domain="[('surgery_state','in',['surgery_completed','post_follow_ups'])]"/>
+                <filter string="Done" name="filter_done" domain="[('consult_done','=',True)]"/>
+                <filter string="Not Done" name="filter_not_done" domain="[('consult_done','=',False)]"/>
+                <separator/>
+                <filter string="Patient" name="group_patient" context="{'group_by':'patient_id'}"/>
+                <filter string="Surgery Case" name="group_case" context="{'group_by':'surgery_case_id'}"/>
+                <filter string="Done Status" name="group_done" context="{'group_by':'consult_done'}"/>
+                <filter string="Planned Date" name="group_planned_date" context="{'group_by':'planned_date:month'}"/>
+            </search>
+        </field>
+    </record>
+
+    <!-- Calendar view — one date per row (planned_date), the correct
+         model for a calendar. Group/filter by Patient here for the
+         "patient-wise" schedule view. -->
+    <record id="view_clinic_postop_consult_calendar" model="ir.ui.view">
+        <field name="name">clinic.postop.consult.calendar</field>
+        <field name="model">clinic.postop.consult</field>
+        <field name="arch" type="xml">
+            <calendar string="Post-op Consult Calendar" date_start="planned_date"
+                    color="patient_id" mode="month">
+                <field name="label"/>
+                <field name="patient_id"/>
+                <field name="surgery_case_id"/>
+                <field name="consult_done"/>
+            </calendar>
+        </field>
+    </record>
+
+    <record id="view_clinic_postop_consult_pivot" model="ir.ui.view">
+        <field name="name">clinic.postop.consult.pivot</field>
+        <field name="model">clinic.postop.consult</field>
+        <field name="arch" type="xml">
+            <pivot string="Post-op Consults – Pivot" display_quantity="true">
+                <field name="patient_id" type="row"/>
+                <field name="consult_done" type="col"/>
+                <field name="surgery_case_id" type="row"/>
+            </pivot>
+        </field>
+    </record>
+
+    <record id="view_clinic_postop_consult_graph" model="ir.ui.view">
+        <field name="name">clinic.postop.consult.graph</field>
+        <field name="model">clinic.postop.consult</field>
+        <field name="arch" type="xml">
+            <graph string="Post-op Consults – Chart" type="bar" stacked="true">
+                <field name="patient_id" type="row"/>
+                <field name="consult_done" type="col"/>
+            </graph>
+        </field>
+    </record>
+
+    <record id="action_clinic_postop_consult_calendar" model="ir.actions.act_window">
+        <field name="name">Follow-up by Patient</field>
+        <field name="res_model">clinic.postop.consult</field>
+        <field name="view_mode">list,calendar,form</field>
+        <field name="view_id" ref="view_clinic_postop_consult_list"/>
+        <field name="search_view_id" ref="view_clinic_postop_consult_search"/>
+        <field name="domain">[('surgery_state','in',['surgery_completed','post_follow_ups'])]</field>
+        <field name="context">{'search_default_filter_completed': 1, 'search_default_group_patient': 1}</field>
+    </record>
+
+    <!-- Menus -->
+    <menuitem id="menu_clinic_postop_management"
+              name="Post-op Management"
+              parent="menu_surgery_case_management_root"
+              sequence="25"/>
+
+    <menuitem id="menu_clinic_postop_followup"
+              name="Post-op Consultation"
+              parent="menu_clinic_postop_management"
+              action="action_clinic_postop_followup"
+              sequence="10"/>
+
+    <menuitem id="menu_clinic_postop_calendar"
+              name="Follow-up by Patient"
+              parent="menu_clinic_postop_management"
+              action="action_clinic_postop_consult_calendar"
+              sequence="20"/>
+
+</odoo>

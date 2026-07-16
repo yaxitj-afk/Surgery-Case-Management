@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<odoo>
+    <!-- Day Care -->
+    <record id="admission_point_daycare_1" model="admission.point">
+        <field name="name">Dagziekenhuis 1 — Route 160, past the emergency department</field>
+        <field name="admission_type">daycare</field>
+    </record>
+
+    <record id="admission_point_daycare_2" model="admission.point">
+        <field name="name">Dagziekenhuis 2 — Route 132, Floor 2</field>
+        <field name="admission_type">daycare</field>
+    </record>
+
+    <!-- Overnight -->
+
+    <record id="admission_point_overnight" model="admission.point">
+        <field name="name">Via the main entrance</field>
+        <field name="admission_type">overnight</field>
+    </record>
+
+    <!-- Private Practice -->
+
+    <record id="admission_point_private" model="admission.point">
+        <field name="name">Boskant 18, 2260 Westerlo</field>
+        <field name="admission_type">private</field>
+    </record>
+</odoo>

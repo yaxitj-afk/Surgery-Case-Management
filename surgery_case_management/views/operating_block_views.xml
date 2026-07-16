@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         OPERATING BLOCK FORM
+    ═══════════════════════════════════════════════════════════ -->
+    <record id="view_clinic_operating_block_form" model="ir.ui.view">
+        <field name="name">clinic.operating.block.form</field>
+        <field name="model">clinic.operating.block</field>
+        <field name="arch" type="xml">
+            <form string="Operating Block">
+                <sheet>
+                    <div class="oe_title">
+                        <h1><field name="name" readonly="1"/></h1>
+                    </div>
+
+                    <group>
+                        <group string="Schedule">
+                            <field name="doctor_id"/>
+                            <field name="day_of_week"/>
+                        </group>
+                        <group string="Location">
+                            <field name="location_id"/>
+                            <field name="location_type"/>
+                            <field name="slot_duration" widget="radio" options="{'horizontal': true}" invisible="1"/>
+                        </group>
+                    </group>
+                    <group>
+                        <group>
+                            <separator string="Duration"/>
+                            <group>
+                                <field name="open_time_hour" string="Start Hour"/>
+                            </group>
+                            <group>
+                                <field name="open_time_minute" string="Start Minute"/>
+                            </group>
+                        </group>
+                    </group>
+                    <group>
+                        <group>
+                            <group>
+                                <field name="close_time_hour" string="End Hour"/>
+                            </group>
+                            <group>
+                                <field name="close_time_minute" string="End Minute"/>
+                            </group>
+                        </group>
+                    </group>
+
+                    <notebook>
+
+                        <!-- Closed days -->
+                        <page string="Closed Days" name="closures">
+                            <div class="alert alert-info mb-3">
+                                <i class="fa fa-info-circle me-1"/>
+                                Add public holidays or vacation periods where this
+                                operating block is <strong>not available</strong>.
+                                These dates will be hidden in the surgery date picker.
+                            </div>
+                            <field name="closure_ids">
+                                <list editable="bottom">
+                                    <field name="from_date"/>
+                                    <field name="to_date"/>
+                                    <field name="reason"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <!-- Extra slots -->
+                        <page string="Extra Slots" name="extras">
+                            <div class="alert alert-info mb-3">
+                                <i class="fa fa-info-circle me-1"/>
+                                Add one-off extra operating days outside the weekly
+                                schedule (e.g. an additional Tuesday slot).
+                            </div>
+                            <field name="extra_ids">
+                                <list editable="bottom">
+                                    <field name="extra_date"/>
+                                    <field name="open_time_hour"
+                                           string="Start Hour"/>
+                                    <field name="open_time_minute"
+                                           string="Start Min"/>
+                                    <field name="close_time_hour"
+                                           string="End Hour"/>
+                                    <field name="close_time_minute"
+                                           string="End Min"/>
+                                    <field name="notes"/>
+                                </list>
+                            </field>
+                        </page>
+
+                    </notebook>
+                </sheet>
+            </form>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         OPERATING BLOCK LIST
+    ═══════════════════════════════════════════════════════════ -->
+    <record id="view_clinic_operating_block_list" model="ir.ui.view">
+        <field name="name">clinic.operating.block.list</field>
+        <field name="model">clinic.operating.block</field>
+        <field name="arch" type="xml">
+            <list string="Operating Blocks"
+                  decoration-muted="active == False">
+                <field name="doctor_id"/>
+                <field name="day_of_week"/>
+                <field name="open_time_hour" string="Start H"/>
+                <field name="open_time_minute" string="Start M"/>
+                <field name="close_time_hour" string="End H"/>
+                <field name="close_time_minute" string="End M"/>
+                <field name="location_id"/>
+                <field name="location_type"/>
+                <field name="active" widget="boolean_toggle"/>
+            </list>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         ACTION
+    ═══════════════════════════════════════════════════════════ -->
+    <record id="action_clinic_operating_block" model="ir.actions.act_window">
+        <field name="name">Operating Blocks</field>
+        <field name="res_model">clinic.operating.block</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Configure your weekly operating schedule
+            </p>
+            <p>
+                Define which days and locations Dr. Colle operates,
+                then add closed days (holidays) and extra one-off slots.
+            </p>
+        </field>
+    </record>
+
+    <!-- Menu entry under Configuration -->
+    <menuitem id="menu_surgery_operating_blocks"
+              name="Operating Blocks"
+              parent="menu_surgery_configuration"
+              action="action_clinic_operating_block"
+              sequence="15"/>
+
+</odoo>

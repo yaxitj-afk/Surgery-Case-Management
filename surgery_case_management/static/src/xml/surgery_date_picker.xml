@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates>
+
+    <t t-name="surgery_case_management.SurgeryDatePicker">
+        <!-- t-ref="wrapper" is required for click-outside-to-close -->
+        <div class="o_surgery_date_picker_wrapper" t-ref="wrapper">
+
+            <div class="o_surgery_date_input_group">
+                <input type="text"
+                       class="o_input o_surgery_date_input"
+                       readonly="readonly"
+                       t-att-value="displayValue"
+                       t-att-placeholder="inputPlaceholder"
+                       t-att-disabled="props.readonly"
+                       t-on-click="toggleCalendar"/>
+                <button type="button"
+                        class="btn btn-secondary o_surgery_date_button"
+                        t-att-disabled="props.readonly"
+                        t-on-click="toggleCalendar">
+                    <i class="fa fa-calendar"/>
+                </button>
+            </div>
+
+            <!-- Inline hints below the input -->
+            <div t-if="state.noDates and state.locationFilterWarning"
+                 class="text-warning small mt-1">
+                <i class="fa fa-exclamation-triangle me-1"/>
+                <t t-esc="state.locationFilterWarning"/>
+            </div>
+            <div t-elif="state.noDates" class="text-danger small mt-1">
+                No operating blocks configured for this doctor.
+            </div>
+
+            <!-- Calendar popover -->
+            <div t-if="state.isOpen" class="o_surgery_calendar_popover">
+
+                <div class="o_surgery_inline_calendar">
+                    <div class="o_surgery_calendar_header">
+                        <button type="button"
+                                class="btn btn-light btn-sm"
+                                t-on-click="previousMonth"
+                                aria-label="Previous month">
+                            <i class="fa fa-chevron-left"/>
+                        </button>
+                        <strong t-esc="monthLabel"/>
+                        <button type="button"
+                                class="btn btn-light btn-sm"
+                                t-on-click="nextMonth"
+                                aria-label="Next month">
+                            <i class="fa fa-chevron-right"/>
+                        </button>
+                    </div>
+                    <table class="o_surgery_calendar_table">
+                        <thead>
+                            <tr>
+                                <th t-foreach="weekdayLabels"
+                                    t-as="weekday"
+                                    t-key="weekday"
+                                    t-esc="weekday"/>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr t-foreach="calendarWeeks"
+                                t-as="week"
+                                t-key="week_index">
+                                <td t-foreach="week"
+                                    t-as="day"
+                                    t-key="day.key">
+                                    <button type="button"
+                                            t-att-class="day.cssClass"
+                                            t-att-disabled="!day.enabled || props.readonly"
+                                            t-att-title="day.title"
+                                            t-on-click="() => this.selectDay(day)">
+                                        <span t-esc="day.label"/>
+                                    </button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+    </t>
+</templates>

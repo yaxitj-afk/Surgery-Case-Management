@@ -1,0 +1,152 @@
+// Surgery Date Picker — Backend Styles
+
+.o_surgery_date_picker_wrapper {
+    max-width: 420px;
+    padding: 0;
+    position: relative;
+
+    .o_surgery_date_input_group {
+        display: flex;
+        gap: 4px;
+        width: 100%;
+    }
+
+    .o_surgery_date_input {
+        cursor: pointer;
+        flex: 1 1 auto;
+
+        &:disabled {
+            cursor: not-allowed;
+        }
+    }
+
+    .o_surgery_date_button {
+        flex: 0 0 auto;
+        min-width: 38px;
+    }
+
+    .o_surgery_calendar_popover {
+        background: #fff;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+        left: 0;
+        margin-top: 4px;
+        padding: 10px;
+        position: absolute;
+        top: 100%;
+        width: 420px;
+        z-index: 1050;
+    }
+
+    // Inline calendar sizing
+    .o_surgery_inline_calendar {
+        max-width: 100%;
+
+        .o_surgery_calendar_header {
+            align-items: center;
+            background: #714b67;
+            border-radius: 6px;
+            color: white;
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            padding: 6px 8px;
+        }
+
+        .o_surgery_calendar_table {
+            border-collapse: separate;
+            border-spacing: 4px;
+            table-layout: fixed;
+            width: 100%;
+
+            th {
+                color: #6c757d;
+                font-size: 12px;
+                font-weight: 600;
+                padding: 2px;
+                text-align: center;
+            }
+
+            td {
+                padding: 0;
+            }
+        }
+
+        .o_surgery_calendar_day {
+            align-items: center;
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            color: #212529;
+            display: flex;
+            font-size: 13px;
+            font-weight: 500;
+            height: 34px;
+            justify-content: center;
+            width: 100%;
+        }
+
+        .o_surgery_calendar_day_out {
+            visibility: hidden;
+        }
+
+        .o_surgery_calendar_day_disabled {
+            color: #adb5bd;
+            cursor: not-allowed;
+            opacity: 0.45;
+        }
+
+        .o_surgery_date_hospital {
+            background-color: #cce5ff;
+            border-color: #74b9ff;
+            color: #004085;
+            font-weight: 600;
+
+            &:not(:disabled):hover {
+                background-color: #74b9ff;
+                color: white;
+            }
+        }
+
+        .o_surgery_date_practice {
+            background-color: #d4edda;
+            border-color: #55efc4;
+            color: #155724;
+            font-weight: 600;
+
+            &:not(:disabled):hover {
+                background-color: #55efc4;
+                color: white;
+            }
+        }
+
+        .o_surgery_calendar_day_today {
+            box-shadow: inset 0 0 0 2px #714b67;
+        }
+
+        .o_surgery_calendar_day_selected {
+            background: #714b67;
+            border-color: #714b67;
+            color: white;
+        }
+    }
+
+    // Legend dots
+    .o_surgery_legend_dot {
+        display: inline-block;
+        width: 12px;
+        height: 12px;
+        border-radius: 3px;
+        margin-right: 4px;
+        vertical-align: middle;
+
+        &.o_surgery_legend_hospital {
+            background-color: #74b9ff;
+        }
+
+        &.o_surgery_legend_practice {
+            background-color: #55efc4;
+        }
+    }
+}

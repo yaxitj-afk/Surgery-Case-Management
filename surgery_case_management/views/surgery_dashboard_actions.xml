@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         CLIENT ACTION — mounts the OWL dashboard component
+    ═══════════════════════════════════════════════════════════ -->
+    <record id="action_surgery_dashboard" model="ir.actions.client">
+        <field name="name">Surgery Dashboard</field>
+        <field name="tag">surgery_dashboard</field>
+    </record>
+
+    <!-- Dashboard is the very first entry, mirrors the mock-up -->
+    <menuitem id="menu_surgery_dashboard"
+              name="Dashboard"
+              parent="menu_surgery_case_management_root"
+              action="action_surgery_dashboard"
+              sequence="1"/>
+
+</odoo>

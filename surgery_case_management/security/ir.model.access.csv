@@ -1,0 +1,13 @@
+id,name,model_id:id,group_id:id,perm_read,perm_write,perm_create,perm_unlink
+access_clinic_surgery_procedure_user,clinic.surgery.procedure.user,model_clinic_surgery_procedure,,1,1,1,1
+access_clinic_surgery_procedure_task_user,clinic.surgery.procedure.task.user,model_clinic_surgery_procedure_task,,1,1,1,1
+access_clinic_surgery_case_user,clinic.surgery.case.user,model_clinic_surgery_case,,1,1,1,1
+access_clinic_postop_consult,clinic.postop.consult,model_clinic_postop_consult,,1,1,1,1
+access_clinic_procedure_postop_config,clinic.procedure.postop.config,model_clinic_procedure_postop_config,,1,1,1,1
+
+access_clinic_operating_block_user,clinic.operating.block.user,model_clinic_operating_block,,1,1,1,1
+access_clinic_operating_block_closure_user,clinic.operating.block.closure.user,model_clinic_operating_block_closure,,1,1,1,1
+access_clinic_operating_block_extra_user,clinic.operating.block.extra.user,model_clinic_operating_block_extra,,1,1,1,1
+access_clinic_admission_wizard,clinic.admission.wizard,model_clinic_admission_wizard,base.group_user,1,1,1,1
+access_clinic_postop_followup_user,clinic.postop.followup.user,model_clinic_postop_followup,base.group_user,1,1,1,1
+access_admission.point,admission.point,model_admission_point,base.group_user,1,1,1,1

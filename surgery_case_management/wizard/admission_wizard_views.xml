@@ -1,0 +1,614 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="view_admission_document_wizard_form" model="ir.ui.view">
+        <field name="name">clinic.admission.wizard.form</field>
+        <field name="model">clinic.admission.wizard</field>
+        <field name="arch" type="xml">
+            <form string="Admission Document">
+                <sheet>
+
+                    <!-- Header info bar -->
+                    <div style="background:linear-gradient(135deg,#667eea,#764ba2);border-radius:12px; padding:16px 20px;
+                        margin-bottom:20px; color:white;display:flex; align-items:center; gap:16px;">
+                        <div style="font-size:20px;">📋</div>
+                        <div>
+                            <div style="font-weight:700; font-size:15px;">
+                                Admission Document
+                            </div>
+                            <div style="font-size:12px; opacity:0.85; margin-top:2px;">
+                                Fill in all applicable fields. Click
+                                <strong>Generate &amp; Send</strong>
+                                to create the PDF
+                                and email it to the patient.
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Patient / Case info (readonly) -->
+                    <group>
+                        <group string="Case Info">
+                            <field name="surgery_case_id" readonly="1"/>
+                            <field name="patient_id" readonly="1"/>
+                            <field name="procedure_id" readonly="1"/>
+                        </group>
+                        <group string="Surgery">
+                            <field name="surgeon_id" readonly="1"/>
+                            <field name="surgery_date" readonly="1"/>
+                            <field name="hospital_location_id" readonly="1"/>
+                            <field name="admission_time" readonly="1"/>
+                        </group>
+                    </group>
+                    <!-- Description -->
+
+
+                    <!--                    <notebook>-->
+
+                    <!-- TAB 1 — Check-in -->
+                    <!--                        <page string="Check-in" name="checkin">-->
+                    <group string="Place &amp; Timing">
+                        <group>
+                            <field name="checkin_place"/>
+                            <field name="checkin_timing"/>
+                            <field name="full_day_available"/>
+                        </group>
+                        <group>
+                            <field name="checkin_date"/>
+                            <field name="checkin_time"
+                                   widget="float_time"
+                                   string="Check-in Hour"/>
+                        </group>
+                    </group>
+                    <group string="Anesthesia">
+                        <group>
+                            <field name="anesthesia_type"/>
+                        </group>
+                    </group>
+                    <!--                        </page>-->
+
+                    <!-- TAB 2 — To Bring -->
+                    <!--                        <page string="To Bring" name="to_bring">-->
+                    <group string="Documents &amp; Items to Bring">
+                        <group>
+                            <field name="bring_green_form"/>
+                            <field name="bring_id_card"/>
+                            <field name="bring_mutual_approval"/>
+                            <field name="bring_sport_bra"/>
+                        </group>
+                        <group>
+                            <field name="bring_compression_garments"/>
+                            <field name="bring_crutches"/>
+                            <field name="bring_other"
+                                   placeholder="Other item..."/>
+                        </group>
+                    </group>
+                    <!--                        </page>-->
+
+                    <!-- TAB 3 — To Arrange -->
+                    <!--                        <page string="To Arrange" name="to_arrange">-->
+                    <group string="Medical Tests &amp; Actions">
+                        <group>
+                            <field name="arrange_rx"/>
+                            <field name="arrange_ultrasound_mammo"/>
+                            <field name="arrange_ultrasound"/>
+                            <field name="arrange_blood_test"/>
+                            <field name="arrange_ecg"/>
+                            <field name="arrange_pac"/>
+                        </group>
+                        <group>
+                            <field name="arrange_ent"/>
+                            <field name="arrange_shave"/>
+                            <field name="arrange_sign_ic"/>
+                            <field name="arrange_payment"/>
+                            <field name="arrange_read_brochure"/>
+                            <field name="arrange_other"
+                                   placeholder="Other arrangement..."/>
+                        </group>
+                    </group>
+                    <!--                        </page>-->
+
+                    <!-- TAB 4 — Medication -->
+                    <!--                        <page string="Medication" name="medication">-->
+                    <group string="Blood Thinners">
+                        <group>
+                            <field name="blood_thinner"/>
+                            <field name="blood_thinner_type"
+                                   invisible="not blood_thinner"/>
+                        </group>
+                    </group>
+
+                    <group string="Description">
+                        <group>
+                            <field name="description" nolabel="1"
+                                   placeholder="Additional information to include in the admission document and email sent to the patient..."/>
+                        </group>
+                    </group>
+                </sheet>
+
+                <footer>
+                    <button name="action_generate_and_send"
+                            string="Generate &amp; Send"
+                            type="object"
+                            class="btn-primary"
+                            data-hotkey="q"/>
+                    <button string="Cancel"
+                            class="btn-secondary"
+                            special="cancel"/>
+                </footer>
+            </form>
+        </field>
+    </record>
+
+    <!-- Action to open wizard -->
+    <record id="action_admission_document_wizard" model="ir.actions.act_window">
+        <field name="name">Admission Document</field>
+        <field name="res_model">clinic.admission.wizard</field>
+        <field name="view_mode">form</field>
+        <field name="target">new</field>
+        <field name="context">{'default_surgery_case_id': active_id}</field>
+    </record>
+
+    <template id="admission_document_template">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-call="web.external_layout">
+                    <div class="page"
+                         style="font-family: 'Arial', sans-serif; font-size: 13px; color: #2c2c2c; line-height: 1.6;">
+
+                        <!-- HEADER — Logo left, Company right -->
+                        <div style="display: table; width: 100%; padding-bottom: 14px; border-bottom: 1px solid #c9b99a; margin-bottom: 28px;">
+                            <div style="display: table-cell; vertical-align: middle; width: 50%;">
+                                <img t-if="res_company.logo"
+                                     t-att-src="image_data_uri(res_company.logo)"
+                                     style="max-height: 70px; max-width: 180px;"/>
+                            </div>
+                            <div style="display: table-cell; vertical-align: middle; text-align: right; font-size: 11px; color: #666; line-height: 1.7;">
+                                <strong style="color: #2c2c2c; font-size: 12px;">
+                                    <t t-esc="res_company.name"/>
+                                </strong>
+                                <br/>
+                                <t t-esc="res_company.vat or 'BE0803222059'"/>
+                                <br/>
+                                <t t-esc="res_company.street or 'Achiel Cleynhenslaan 150'"/>
+                                <br/>
+                                <t t-esc="res_company.zip or '3140'"/>
+                                <t t-esc="res_company.city or 'Keerbergen'"/>
+                                <br/>
+                                <t t-esc="res_company.country_id.name or 'België'"/>
+                            </div>
+                        </div>
+
+                        <!-- DOCUMENT TITLE -->
+                        <div style="text-align: center; margin-bottom: 24px;">
+                            <div style="font-size: 22px; font-weight: 300; color: #8B7355; letter-spacing: 1px;">
+                                Admission Document
+                            </div>
+                            <div style="font-size: 12px; color: #999; margin-top: 4px; letter-spacing: 0.5px;">
+                                Opnamedocument
+                            </div>
+                        </div>
+
+                        <!-- PATIENT & SURGERY INFO -->
+                        <table style="width: 100%; border-collapse: collapse; margin-bottom: 28px;">
+                            <tr>
+                                <td style="padding: 10px 14px; border-bottom: 1px solid #e8e0d5; width: 35%;">
+                                    <span style="font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 700;">
+                                        Patient
+                                    </span>
+                                    <br/>
+                                    <span style="font-size: 14px; font-weight: 600;">
+                                        <t t-esc="o.patient_id.name"/>
+                                    </span>
+                                </td>
+                                <td style="padding: 10px 14px; border-bottom: 1px solid #e8e0d5; width: 35%;">
+                                    <span style="font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 700;">
+                                        Procedure
+                                    </span>
+                                    <br/>
+                                    <span style="font-size: 13px; font-weight: 600;">
+                                        <t t-esc="o.procedure_id.name or '—'"/>
+                                    </span>
+                                </td>
+                                <td style="padding: 10px 14px; border-bottom: 1px solid #e8e0d5; width: 30%;">
+                                    <span style="font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 700;">
+                                        Surgeon
+                                    </span>
+                                    <br/>
+                                    <span style="font-size: 13px; font-weight: 600;">
+                                        <t t-esc="o.surgeon_id.name or 'Dr. Julien Colle'"/>
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="2" style="padding: 10px 14px; border-bottom: 1px solid #e8e0d5;">
+                                    <span style="font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 700;">
+                                        Surgery Date
+                                    </span>
+                                    <br/>
+                                    <span style="font-size: 13px; font-weight: 600;">
+                                        <t t-if="o.surgery_date">
+                                            <t t-esc="o.surgery_date.strftime('%A %d %B %Y at %H:%M')"/>
+                                        </t>
+                                        <t t-else="">To be confirmed</t>
+                                    </span>
+                                </td>
+                                <td style="padding: 10px 14px; border-bottom: 1px solid #e8e0d5;">
+                                    <span style="font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 0.8px; font-weight: 700;">
+                                        Date Prepared
+                                    </span>
+                                    <br/>
+                                    <span style="font-size: 13px;">
+                                        <t t-esc="datetime.date.today().strftime('%d/%m/%Y')"/>
+                                    </span>
+                                </td>
+                            </tr>
+                        </table>
+
+                        <!-- SECTION 1 — CHECK-IN -->
+                        <div style="margin-bottom: 22px;">
+                            <div style="font-size: 10px; font-weight: 700; color: #8B7355; text-transform: uppercase; letter-spacing: 1.5px; border-bottom: 2px solid #8B7355; padding-bottom: 4px; margin-bottom: 12px;">
+                                1 · Check-in
+                            </div>
+                            <t t-if="o.checkin_place == 'hospital'">
+                                <p style="margin: 6px 0;">
+                                    <strong>Place of surgery:</strong>
+                                    Hospital —
+                                    <t t-esc="o.hospital_location_id.name or ''"/>
+                                    <t t-if="o.hospital_location_id.street">,<t t-esc="o.hospital_location_id.street"/>,
+                                        <t t-esc="o.hospital_location_id.zip"/>
+                                        <t t-esc="o.hospital_location_id.city"/>
+                                    </t>
+                                </p>
+                            </t>
+                            <t t-if="o.checkin_place == 'practice'">
+                                <p style="margin: 6px 0;">
+                                    <strong>Place of surgery:</strong>
+                                    Private Practice — Villa Medici
+                                </p>
+                            </t>
+                            <t t-if="o.checkin_timing == 'same_day'">
+                                <p style="margin: 6px 0;">
+                                    <strong>Check-in timing:</strong>
+                                    Same day as surgery
+                                    <t t-if="o.checkin_date">on
+                                        <strong>
+                                            <t t-esc="o.checkin_date.strftime('%d/%m/%Y')"/>
+                                        </strong>
+                                    </t>
+                                    <t t-if="o.checkin_time">at
+                                        <strong>
+                                            <t t-esc="'%02d:%02d' % (int(o.checkin_time), int((o.checkin_time % 1) * 60))"/>
+                                        </strong>
+                                    </t>
+                                </p>
+                            </t>
+                            <t t-if="o.checkin_timing == 'day_before'">
+                                <p style="margin: 6px 0;">
+                                    <strong>Check-in timing:</strong>
+                                    Day before surgery
+                                    <t t-if="o.checkin_time">at
+                                        <strong>
+                                            <t t-esc="'%02d:%02d' % (int(o.checkin_time), int((o.checkin_time % 1) * 60))"/>
+                                        </strong>
+                                    </t>
+                                </p>
+                            </t>
+                            <t t-if="o.admission_time">
+                                <p style="margin: 6px 0;">
+                                    <strong>Admission time:</strong>
+                                    <t t-esc="o.admission_time"/>
+                                </p>
+                            </t>
+                            <t t-if="o.full_day_available">
+                                <div style="background: #fdf8f0; border-left: 3px solid #8B7355; padding: 8px 12px; margin-top: 8px; font-size: 12px; color: #666;">
+                                    <strong>Note:</strong>
+                                    The exact hour may still change. Please keep the full day available.
+                                </div>
+                            </t>
+                            <p style="margin: 8px 0; font-size: 12px; color: #777;">Not available on this date? Please
+                                contact our secretariat:
+                                <strong>info@drcolle.be</strong>
+                            </p>
+                        </div>
+
+                        <!-- SECTION 2 — ANESTHESIA -->
+                        <div style="margin-bottom: 22px;">
+                            <div style="font-size: 10px; font-weight: 700; color: #8B7355; text-transform: uppercase; letter-spacing: 1.5px; border-bottom: 2px solid #8B7355; padding-bottom: 4px; margin-bottom: 12px;">
+                                2 · Anesthesia
+                            </div>
+                            <t t-if="o.anesthesia_type == 'local'">
+                                <p style="margin: 6px 0;">The procedure will be performed under <strong>local
+                                    anesthesia</strong>. You may eat and drink normally before the procedure.
+                                </p>
+                            </t>
+                            <t t-if="o.anesthesia_type == 'general'">
+                                <p style="margin: 6px 0;">The procedure will be performed under <strong>general
+                                    anesthesia</strong>. Please follow the fasting instructions below strictly:
+                                </p>
+                                <table style="width: 100%; margin-top: 8px;">
+                                    <tr>
+                                        <td style="padding: 6px 12px; background: #fdf8f0; border-left: 3px solid #8B7355; font-size: 12px;">
+                                            <strong>6 hours</strong>
+                                            before the procedure: no food (solid food).
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td style="height: 4px;"></td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 6px 12px; background: #fdf8f0; border-left: 3px solid #8B7355; font-size: 12px;">
+                                            <strong>2 hours</strong>
+                                            before the procedure: no drinks (maximum 200 ml of clear fluid).
+                                        </td>
+                                    </tr>
+                                </table>
+                            </t>
+                        </div>
+
+                        <!-- SECTION 3 — MEDICATION -->
+                        <t t-if="o.blood_thinner">
+                            <div style="margin-bottom: 22px;">
+                                <div style="font-size: 10px; font-weight: 700; color: #8B7355; text-transform: uppercase; letter-spacing: 1.5px; border-bottom: 2px solid #8B7355; padding-bottom: 4px; margin-bottom: 12px;">
+                                    3 · Medication — Important
+                                </div>
+                                <div style="background: #fdf8f0; border-left: 3px solid #c0392b; padding: 10px 14px; font-size: 12px;">
+                                    <strong>Blood Thinners</strong>
+                                    <br/>
+                                    You are taking blood thinners
+                                    <t t-if="o.blood_thinner_type">(
+                                        <t
+                                                t-esc="dict(o._fields['blood_thinner_type'].selection).get(o.blood_thinner_type, '')"/>
+                                        )
+                                    </t>
+                                    .
+                                    Please strictly follow doctor's or anesthetist's instructions regarding temporarily
+                                    stopping this medication before the procedure.
+                                </div>
+                            </div>
+                        </t>
+
+                        <!-- SECTION 4 — WHAT TO BRING -->
+                        <t t-set="has_bring"
+                           t-value="o.bring_green_form or o.bring_id_card or o.bring_mutual_approval or o.bring_sport_bra or o.bring_compression_garments or o.bring_crutches or o.bring_other"/>
+                        <t t-if="has_bring">
+                            <div style="margin-bottom: 22px;">
+                                <div style="font-size: 10px; font-weight: 700; color: #8B7355; text-transform: uppercase; letter-spacing: 1.5px; border-bottom: 2px solid #8B7355; padding-bottom: 4px; margin-bottom: 12px;">
+                                    4 · What to Bring
+                                </div>
+                                <table style="width: 100%; border-collapse: collapse;">
+                                    <t t-if="o.bring_green_form">
+                                        <tr>
+                                            <td style="padding: 6px 0; border-bottom: 1px solid #e8e0d5; width: 24px; color: #8B7355;">
+                                                ☑
+                                            </td>
+                                            <td style="padding: 6px 8px; border-bottom: 1px solid #e8e0d5;">Green form
+                                                (completed)
+                                            </td>
+                                        </tr>
+                                    </t>
+                                    <t t-if="o.bring_id_card">
+                                        <tr>
+                                            <td style="padding: 6px 0; border-bottom: 1px solid #e8e0d5; color: #8B7355;">
+                                                ☑
+                                            </td>
+                                            <td style="padding: 6px 8px; border-bottom: 1px solid #e8e0d5;">Identity
+                                                card
+                                            </td>
+                                        </tr>
+                                    </t>
+                                    <t t-if="o.bring_mutual_approval">
+                                        <tr>
+                                            <td style="padding: 6px 0; border-bottom: 1px solid #e8e0d5; color: #8B7355;">
+                                                ☑
+                                            </td>
+                                            <td style="padding: 6px 8px; border-bottom: 1px solid #e8e0d5;">Mutuality /
+                                                insurance approval
+                                            </td>
+                                        </tr>
+                                    </t>
+                                    <t t-if="o.bring_sport_bra">
+                                        <tr>
+                                            <td style="padding: 6px 0; border-bottom: 1px solid #e8e0d5; color: #8B7355;">
+                                                ☑
+                                            </td>
+                                            <td style="padding: 6px 8px; border-bottom: 1px solid #e8e0d5;">Sturdy sport
+                                                bra (Lipoelastic or Anita) — size was measured by the surgeon
+                                            </td>
+                                        </tr>
+                                    </t>
+                                    <t t-if="o.bring_compression_garments">
+                                        <tr>
+                                            <td style="padding: 6px 0; border-bottom: 1px solid #e8e0d5; color: #8B7355;">
+                                                ☑
+                                            </td>
+                                            <td style="padding: 6px 8px; border-bottom: 1px solid #e8e0d5;">Compression
+                                                garments (Lipoelastic) — order via www.lipoelastic.nl
+                                            </td>
+                                        </tr>
+                                    </t>
+                                    <t t-if="o.bring_crutches">
+                                        <tr>
+                                            <td style="padding: 6px 0; border-bottom: 1px solid #e8e0d5; color: #8B7355;">
+                                                ☑
+                                            </td>
+                                            <td style="padding: 6px 8px; border-bottom: 1px solid #e8e0d5;">Crutches
+                                            </td>
+                                        </tr>
+                                    </t>
+                                    <t t-if="o.bring_other">
+                                        <tr>
+                                            <td style="padding: 6px 0; border-bottom: 1px solid #e8e0d5; color: #8B7355;">
+                                                ☑
+                                            </td>
+                                            <td style="padding: 6px 8px; border-bottom: 1px solid #e8e0d5;">
+                                                <t t-esc="o.bring_other"/>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </table>
+                            </div>
+                        </t>
+
+                        <!-- SECTION 5 — TO ARRANGE -->
+                        <t t-set="has_arrange"
+                           t-value="o.arrange_rx or o.arrange_ultrasound_mammo or o.arrange_ultrasound or o.arrange_blood_test or o.arrange_ecg or o.arrange_pac or o.arrange_ent or o.arrange_shave or o.arrange_sign_ic or o.arrange_payment or o.arrange_read_brochure or o.arrange_other"/>
+                        <t t-if="has_arrange">
+                            <div style="margin-bottom: 22px;">
+                                <div style="font-size: 10px; font-weight: 700; color: #8B7355; text-transform: uppercase; letter-spacing: 1.5px; border-bottom: 2px solid #8B7355; padding-bottom: 4px; margin-bottom: 12px;">
+                                    5 · To Arrange Before Surgery
+                                </div>
+                                <table style="width: 100%; border-collapse: collapse;">
+                                    <t t-if="o.arrange_rx">
+                                        <tr>
+                                            <td style="padding: 6px 0; border-bottom: 1px solid #e8e0d5; width: 24px; color: #8B7355;">
+                                                ☑
+                                            </td>
+                                            <td style="padding: 6px 8px; border-bottom: 1px solid #e8e0d5;">RX
+                                                (radiograph)
+                                            </td>
+                                        </tr>
+                                    </t>
+                                    <t t-if="o.arrange_ultrasound_mammo">
+                                        <tr>
+                                            <td style="padding: 6px 0; border-bottom: 1px solid #e8e0d5; color: #8B7355;">
+                                                ☑
+                                            </td>
+                                            <td style="padding: 6px 8px; border-bottom: 1px solid #e8e0d5;">Ultrasound +
+                                                mammography
+                                            </td>
+                                        </tr>
+                                    </t>
+                                    <t t-if="o.arrange_ultrasound">
+                                        <tr>
+                                            <td style="padding: 6px 0; border-bottom: 1px solid #e8e0d5; color: #8B7355;">
+                                                ☑
+                                            </td>
+                                            <td style="padding: 6px 8px; border-bottom: 1px solid #e8e0d5;">Ultrasound
+                                            </td>
+                                        </tr>
+                                    </t>
+                                    <t t-if="o.arrange_blood_test">
+                                        <tr>
+                                            <td style="padding: 6px 0; border-bottom: 1px solid #e8e0d5; color: #8B7355;">
+                                                ☑
+                                            </td>
+                                            <td style="padding: 6px 8px; border-bottom: 1px solid #e8e0d5;">Blood test
+                                                (lab)
+                                            </td>
+                                        </tr>
+                                    </t>
+                                    <t t-if="o.arrange_ecg">
+                                        <tr>
+                                            <td style="padding: 6px 0; border-bottom: 1px solid #e8e0d5; color: #8B7355;">
+                                                ☑
+                                            </td>
+                                            <td style="padding: 6px 8px; border-bottom: 1px solid #e8e0d5;">ECG</td>
+                                        </tr>
+                                    </t>
+                                    <t t-if="o.arrange_pac">
+                                        <tr>
+                                            <td style="padding: 6px 0; border-bottom: 1px solid #e8e0d5; color: #8B7355;">
+                                                ☑
+                                            </td>
+                                            <td style="padding: 6px 8px; border-bottom: 1px solid #e8e0d5;">
+                                                Pre-operative anesthesia consult (PAC) — phone:
+                                                <strong>015 50 52 39</strong>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                    <t t-if="o.arrange_ent">
+                                        <tr>
+                                            <td style="padding: 6px 0; border-bottom: 1px solid #e8e0d5; color: #8B7355;">
+                                                ☑
+                                            </td>
+                                            <td style="padding: 6px 8px; border-bottom: 1px solid #e8e0d5;">
+                                                Pre-operative ENT (NKO) consult
+                                            </td>
+                                        </tr>
+                                    </t>
+                                    <t t-if="o.arrange_shave">
+                                        <tr>
+                                            <td style="padding: 6px 0; border-bottom: 1px solid #e8e0d5; color: #8B7355;">
+                                                ☑
+                                            </td>
+                                            <td style="padding: 6px 8px; border-bottom: 1px solid #e8e0d5;">Shave the
+                                                surgical area the evening before the procedure
+                                            </td>
+                                        </tr>
+                                    </t>
+                                    <t t-if="o.arrange_sign_ic">
+                                        <tr>
+                                            <td style="padding: 6px 0; border-bottom: 1px solid #e8e0d5; color: #8B7355;">
+                                                ☑
+                                            </td>
+                                            <td style="padding: 6px 8px; border-bottom: 1px solid #e8e0d5;">Read and <strong>
+                                                sign the informed consent
+                                            </strong> (no later than 2 weeks before surgery)
+                                            </td>
+                                        </tr>
+                                    </t>
+                                    <t t-if="o.arrange_payment">
+                                        <tr>
+                                            <td style="padding: 6px 0; border-bottom: 1px solid #e8e0d5; color: #8B7355;">
+                                                ☑
+                                            </td>
+                                            <td style="padding: 6px 8px; border-bottom: 1px solid #e8e0d5;">Complete
+                                                payment as stated on the invoice
+                                            </td>
+                                        </tr>
+                                    </t>
+                                    <t t-if="o.arrange_read_brochure">
+                                        <tr>
+                                            <td style="padding: 6px 0; border-bottom: 1px solid #e8e0d5; color: #8B7355;">
+                                                ☑
+                                            </td>
+                                            <td style="padding: 6px 8px; border-bottom: 1px solid #e8e0d5;">Read the
+                                                information brochure
+                                            </td>
+                                        </tr>
+                                    </t>
+                                    <t t-if="o.arrange_other">
+                                        <tr>
+                                            <td style="padding: 6px 0; border-bottom: 1px solid #e8e0d5; color: #8B7355;">
+                                                ☑
+                                            </td>
+                                            <td style="padding: 6px 8px; border-bottom: 1px solid #e8e0d5;">
+                                                <t t-esc="o.arrange_other"/>
+                                            </td>
+                                        </tr>
+                                    </t>
+                                </table>
+                            </div>
+                        </t>
+                        <!-- SECTION — DESCRIPTION -->
+                        <t t-if="o.description">
+                            <div style="margin-bottom: 22px;">
+                                <div style="font-size: 10px; font-weight: 700; color: #8B7355; text-transform: uppercase; letter-spacing: 1.5px; border-bottom: 2px solid #8B7355; padding-bottom: 4px; margin-bottom: 12px;">
+                                    Description
+                                </div>
+                                <p style="margin: 6px 0; color: #444; white-space: pre-wrap;" t-esc="o.description"/>
+                            </div>
+                        </t>
+
+                        <!-- SECTION 6 — AFTER SURGERY -->
+                        <div style="margin-bottom: 32px;">
+                            <div style="font-size: 10px; font-weight: 700; color: #8B7355; text-transform: uppercase; letter-spacing: 1.5px; border-bottom: 2px solid #8B7355; padding-bottom: 4px; margin-bottom: 12px;">
+                                6 · After Surgery
+                            </div>
+                            <p style="margin: 6px 0; color: #444;">After the procedure you will receive care
+                                instructions. If required, a home-nursing prescription and digital prescriptions on your
+                                eID will be provided.
+                            </p>
+                            <p style="margin: 6px 0; color: #444;">For any questions or concerns, please contact the
+                                practice:
+                                <strong>info@drcolle.be</strong>
+                            </p>
+                        </div>
+
+                    </div>
+                </t>
+            </t>
+        </t>
+    </template>
+
+</odoo>

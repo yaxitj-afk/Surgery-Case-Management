@@ -1,0 +1,595 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <template id="report_hospital_invoice_v2">
+        <t t-call="web.html_container">
+            <t t-foreach="docs" t-as="o">
+                <t t-set="lang" t-value="o.partner_id.lang"/>
+                <t t-set="company" t-value="o.company_id.sudo()"/>
+                <t t-call="surgery_case_management.report_hospital_invoice_document_v2" t-lang="lang"/>
+            </t>
+        </t>
+    </template>
+
+    <template id="report_hospital_invoice_document_v2">
+        <t t-set="o" t-value="o.with_context(lang=lang)"/>
+        <t t-set="company" t-value="o.company_id.sudo()"/>
+        <t t-set="company_id" t-value="company"/>
+        <t t-set="forced_vat" t-value="o.fiscal_position_id.foreign_vat"/>
+        <t t-call="web.external_layout">
+            <t t-set="hospital_lines" t-value="o._drcolle_get_hospital_invoice_lines()"/>
+            <t t-set="doctor_line" t-value="hospital_lines[0] if hospital_lines else None"/>
+            <t t-set="remaining_line" t-value="hospital_lines[-1] if o.drcolle_remaining_amount else None"/>
+            <t t-set="hospital_totals" t-value="o._drcolle_get_hospital_invoice_totals()"/>
+            <t t-set="hospital_bank" t-value="o.drcolle_hospital_bank_id or o.drcolle_hospital_id.bank_ids[:1]"/>
+            <t t-set="patient_birthdate" t-value="o._drcolle_get_partner_date_of_birth()"/>
+            <t t-set="proof_email" t-value="o._drcolle_get_payment_proof_email()"/>
+            <t t-set="vat_label" t-value="o._drcolle_get_remaining_tax_label()"/>
+
+            <style>
+                /* Scoped, self-contained styles. Nothing here reuses Bootstrap's
+                .table / .row / .col-* classes, so nothing in web.external_layout's
+                Bootstrap bundle can override these rules via higher specificity. */
+                .drcolle_hospital_invoice_v2 {
+                font-size: 13px;
+                color: #2b2b2b;
+                font-family: "Helvetica Neue", Arial, sans-serif;
+                }
+                .drcolle_hospital_invoice_v2 table {
+                border-collapse: collapse;
+                box-sizing: border-box;
+                }
+                .drcolle_hospital_invoice_v2 td, .drcolle_hospital_invoice_v2 th {
+                box-sizing: border-box;
+                }
+                .drcolle_hospital_invoice_v2 .agreement-title {
+                font-size: 30px;
+                font-weight: 400;
+                color: #7D6250;
+                font-family: Georgia, "Times New Roman", serif;
+                letter-spacing: .2px;
+                margin: 0 0 8px 0;
+                }
+                .drcolle_hospital_invoice_v2 .patient-name {
+                font-size: 13px;
+                color: #2b2b2b;
+                margin: 0 0 4px 0;
+                }
+                .drcolle_hospital_invoice_v2 .subtitle {
+                color: #555;
+                font-size: 12px;
+                margin: 0 0 16px 0;
+                }
+                .drcolle_hospital_invoice_v2 .info-table {
+                width: 100%;
+                border-collapse: separate;
+                border-spacing: 0 8px; /* White gap between rows */
+                background: #ffffff;
+                margin: 12px 0 20px;
+                }
+
+                /* Force every row and every cell to have the same color */
+                .drcolle_hospital_invoice_v2 .info-table tbody tr,
+                .drcolle_hospital_invoice_v2 .info-table tbody tr:nth-child(odd),
+                .drcolle_hospital_invoice_v2 .info-table tbody tr:nth-child(even),
+                .drcolle_hospital_invoice_v2 .info-table tbody tr td,
+                .drcolle_hospital_invoice_v2 .info-table tbody tr:nth-child(odd) td,
+                .drcolle_hospital_invoice_v2 .info-table tbody tr:nth-child(even) td {
+                background: #EDE7DF !important;
+                }
+
+                .drcolle_hospital_invoice_v2 .info-table td {
+                padding: 12px 18px;
+                font-size: 13px;
+                color: #333;
+                border: none !important;
+                vertical-align: middle;
+                }
+
+                .drcolle_hospital_invoice_v2 .info-table td:first-child {
+                width: 30%;
+                font-weight: 700;
+                }
+
+                .drcolle_hospital_invoice_v2 .info-table tr td:first-child {
+                border-radius: 3px 0 0 3px;
+                }
+
+                .drcolle_hospital_invoice_v2 .info-table tr td:last-child {
+                border-radius: 0 3px 3px 0;
+                }
+                .drcolle_hospital_invoice_v2 .section-label {
+                letter-spacing: 1.5px;
+                font-size: 11px;
+                font-weight: 700;
+                color: #6b4f3f;
+                text-transform: uppercase;
+                margin-bottom: 10px;
+                margin-top: 6px;
+                }
+                .drcolle_hospital_invoice_v2 .cost-table {
+                width: 100%;
+                margin-bottom: 16px;
+                }
+                .drcolle_hospital_invoice_v2 .cost-table th {
+                text-transform: uppercase;
+                font-size: 10px;
+                letter-spacing: .5px;
+                font-weight: 700;
+                color: #6b6b6b;
+                border-bottom: 1px solid #ddd;
+                padding-bottom: 8px;
+                }
+                .drcolle_hospital_invoice_v2 .cost-table td {
+                padding: 12px 8px;
+                vertical-align: top;
+                border-bottom: 1px solid #f0f0f0;
+                }
+                .drcolle_hospital_invoice_v2 .cost-table .line-desc {
+                font-size: 11px;
+                color: #666;
+                display: block;
+                margin-top: 3px;
+                line-height: 1.4;
+                }
+                .drcolle_hospital_invoice_v2 .cost-table .totaal-row td {
+                border-top: 2px solid #333;
+                font-weight: 700;
+                padding-top: 12px;
+                }
+                .drcolle_hospital_invoice_v2 .payment-cols {
+                width: 100%;
+                display: table;
+                table-layout: fixed;
+                }
+
+                .drcolle_hospital_invoice_v2 .payment-cols .payment-col {
+                display: table-cell;
+                width: 50%;
+                vertical-align: top;
+                padding: 0 6px;
+                }
+
+                .drcolle_hospital_invoice_v2 .payment-cols .payment-col:first-child {
+                padding-left: 0;
+                }
+
+                .drcolle_hospital_invoice_v2 .payment-cols .payment-col:last-child {
+                padding-right: 0;
+                }
+                .drcolle_hospital_invoice_v2 .payment-box {
+                border: 1px solid #DDD4CB;
+                border-radius: 14px; /* Rounded corners */
+                overflow: hidden; /* Makes header follow the rounded corners */
+                background: #FFFFFF;
+                }
+
+                .drcolle_hospital_invoice_v2 .payment-box-header {
+                background: #8A715D;
+                color: #FFFFFF;
+                padding: 12px 18px;
+                font-size: 13px;
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 3px;
+
+                /* Round only the top corners */
+                border-radius: 14px 14px 0 0;
+                }
+
+                .drcolle_hospital_invoice_v2 .payment-box-body {
+                padding: 22px 18px 18px;
+                border-radius: 0 0 14px 14px;
+                }
+
+                .drcolle_hospital_invoice_v2 .payment-box {
+                border: 2px solid #DDD4CB;
+                border-radius: 16px;
+                overflow: hidden;
+                }
+
+                .drcolle_hospital_invoice_v2 .payment-box-header {
+                background: #8A715D;
+                border-radius: 16px 16px 0 0;
+                }
+
+                .drcolle_hospital_invoice_v2 .payment-box-body {
+                background: #FFFFFF;
+                }
+
+
+                .drcolle_hospital_invoice_v2 .payment-amount {
+                font-size: 22px;
+                font-weight: 700;
+                color: #6b4f3f;
+                margin-bottom: 2px;
+                }
+                .drcolle_hospital_invoice_v2 .payment-subtext {
+                font-size: 11px;
+                color: #666;
+                margin-bottom: 10px;
+                }
+                .drcolle_hospital_invoice_v2 .payment-kv {
+                width: 100%;
+                border-collapse: collapse;
+                background: #FFFFFF !important;
+                }
+
+                .drcolle_hospital_invoice_v2 .payment-kv tr {
+                background: #FFFFFF !important;
+                }
+
+                .drcolle_hospital_invoice_v2 .payment-kv td {
+                background: #FFFFFF !important;
+                padding: 8px 0;
+                font-size: 12px;
+                border: none;
+                vertical-align: middle;
+                }
+                <!--                .drcolle_hospital_invoice_v2 .payment-kv tr + tr td {-->
+                <!--                border-top: none !important;-->
+                <!--                }-->
+                .drcolle_hospital_invoice_v2 .payment-kv td:first-child {
+                width: 42%;
+                color: #666;
+                font-weight: normal;
+                }
+
+                .drcolle_hospital_invoice_v2 .payment-kv td:last-child {
+                text-align: right;
+                font-weight: 700;
+                color: #333;
+                }
+                .drcolle_hospital_invoice_v2 .proof-email {
+                font-style: italic;
+                color: #444;
+                font-size: 12px;
+                margin-top: 12px;
+                }
+                .drcolle_hospital_invoice_v2.terms h4 {
+                font-family: Georgia, "Times New Roman", serif;
+                font-weight: 400;
+                color: #2b2b2b;
+                font-size: 20px;
+                text-align: center;
+                margin-bottom: 16px;
+                }
+                .drcolle_hospital_invoice_v2.terms h5 {
+                font-size: 13px;
+                font-weight: 700;
+                color: #2b2b2b;
+                margin-top: 18px;
+                margin-bottom: 6px;
+                }
+                .drcolle_hospital_invoice_v2.terms p {
+                font-size: 12px;
+                line-height: 1.55;
+                color: #333;
+                text-align: justify;
+                margin: 0 0 10px 0;
+                }
+                .drcolle_hospital_invoice_v2 .u-text-center { text-align: center; }
+                .drcolle_hospital_invoice_v2 .u-text-start { text-align: left; }
+                .drcolle_hospital_invoice_v2 .u-text-end { text-align: right; }
+            </style>
+
+            <div class="page drcolle_hospital_invoice_v2">
+                <h2 class="agreement-title u-text-center">Schriftelijke overeenkomst esthetische ingreep</h2>
+
+                <p class="u-text-center patient-name">
+                    <strong>
+                        <span t-field="o.partner_id.name"/>
+                    </strong>
+                    <t t-if="patient_birthdate">
+                        <span>&#183; °</span>
+                        <span t-out="patient_birthdate" t-options='{"widget": "date"}'/>
+                    </t>
+                </p>
+                <p class="u-text-center subtitle">
+                    Opgemaakt op
+                    <span t-field="o.invoice_date"/>
+                </p>
+
+                <table class="info-table">
+                    <tbody>
+                        <tr>
+                            <td>Geplande ingreep</td>
+                            <td>
+                                <span t-field="o.drcolle_planned_procedure"/>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Datum ingreep</td>
+                            <td>
+                                <span t-field="o.drcolle_surgery_date"/>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Behandelende arts</td>
+                            <td>
+                                Dr.
+                                <span t-out="o.surgery_case_id.surgeon_id.name or ''"/>
+                                — plastisch chirurg
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>Locatie ingreep</td>
+                            <td>
+                                <span t-field="o.drcolle_hospital_id.name"/>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="section-label">Overzicht van de kosten</div>
+                <table class="table cost-table table-borderless">
+                    <thead>
+                        <tr>
+                            <th class="u-text-start">Onderdeel</th>
+                            <th class="u-text-end">Excl. BTW</th>
+                            <th class="u-text-end">
+                                <span t-out="vat_label"/>
+                            </th>
+                            <th class="u-text-end">Totaal incl.</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr t-if="doctor_line">
+                            <td>
+                                <strong>Honorarium esthetische peri-operatieve zorg en begeleiding</strong>
+                                <span class="line-desc">
+                                    Pre-operatieve planning en voorbereiding, postoperatieve controles,
+                                    wondzorg en nazorgbehandelingen gedurende het volledige hersteltraject.
+                                </span>
+                            </td>
+                            <td class="u-text-end">
+                                <span t-out="doctor_line['price_subtotal']"
+                                      t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                            </td>
+                            <td class="u-text-end">
+                                <span t-out="doctor_line['price_tax']"
+                                      t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                            </td>
+                            <td class="u-text-end">
+                                <span t-out="doctor_line['price_total']"
+                                      t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                            </td>
+                        </tr>
+                        <tr t-if="remaining_line">
+                            <td>
+                                <strong>Ziekenhuis- en anesthesiekosten</strong>
+                                <span class="line-desc">
+                                    Operatiekwartier, dagopname, verpleegkundige zorg en anesthesie.
+                                    Aangerekend en te betalen via het
+                                    <span t-out="o.drcolle_hospital_id.name or 'ziekenhuis'"/>.
+                                </span>
+                            </td>
+                            <td class="u-text-end">
+                                <span t-out="remaining_line['price_subtotal']"
+                                      t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                            </td>
+                            <td class="u-text-end">
+                                <span t-out="remaining_line['price_tax']"
+                                      t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                            </td>
+                            <td class="u-text-end">
+                                <span t-out="remaining_line['price_total']"
+                                      t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                            </td>
+                        </tr>
+                        <tr class="totaal-row">
+                            <td>Totaal</td>
+                            <td class="u-text-end">
+                                <span t-out="hospital_totals['price_subtotal']"
+                                      t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                            </td>
+                            <td class="u-text-end">
+                                <span t-out="hospital_totals['price_tax']"
+                                      t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                            </td>
+                            <td class="u-text-end">
+                                <span t-out="hospital_totals['price_total']"
+                                      t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="payment-cols">
+                    <div class="payment-col">
+                        <div class="payment-box">
+                            <div class="payment-box-header">1 &#183; Honorarium —
+                                <span t-out="company.name"/>
+                            </div>
+                            <div class="payment-box-body">
+                                <div class="payment-amount">
+                                    <span t-out="o.amount_total"
+                                          t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                </div>
+                                <div class="payment-subtext">
+                                    Te voldoen in de praktijk of via overschrijving
+                                </div>
+                                <t t-set="show_link_qr" t-value="o.display_link_qr_code and o.amount_residual"/>
+                                <div t-if="show_link_qr" id="payment_link_qrcode"
+                                     class="d-flex mb-3 avoid-page-break-inside">
+                                    <t t-set="portal_qr_code" t-value="o._generate_portal_payment_qr()"/>
+                                    <div class="qrcode me-3 position-relative" id="qrcode_image">
+                                        <a t-att-href="o._get_portal_payment_link()" target="_blank"
+                                           class="top-0 start-0 position-absolute w-100 h-100 z-1"/>
+                                        <p class="position-relative mb-0">
+                                            <img t-att-src="portal_qr_code"/>
+                                            <img src="/account/static/src/img/Odoo_logo_O.svg"
+                                                 id="qrcode_odoo_logo"
+                                                 class="top-50 start-50 position-absolute bg-white border border-3 rounded-circle"
+                                            />
+                                        </p>
+                                    </div>
+                                    <div class="d-inline lh-sm" id="qrcode_info" t-if="portal_qr_code">
+                                        <p class="fw-bold mb-0">PAY IN A FLASH!</p>
+                                        <p class="text-muted fst-italic">Scan the QR code<br/>or click to pay online
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <table class="payment-kv table-borderless">
+                                    <tr>
+                                        <td>Begunstigde</td>
+                                        <td>
+                                            <span t-out="company.name"/>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Rekening</td>
+                                        <td>
+                                            <span t-out="o.partner_bank_id.acc_number or ''"/>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Mededeling</td>
+                                        <td>
+                                            <span t-out="o.payment_reference or ''"/>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="payment-col">
+                        <div class="payment-box">
+                            <div class="payment-box-header">2 &#183; Ziekenhuis —
+                                <span t-out="o.drcolle_hospital_id.name or ''"/>
+                            </div>
+                            <div class="payment-box-body">
+                                <div class="payment-amount">
+                                    <span t-out="o._drcolle_get_hospital_payment_amount()"
+                                          t-options='{"widget": "monetary", "display_currency": o.currency_id}'/>
+                                </div>
+                                <div class="payment-subtext">Over te schrijven &#183; uiterlijk 1 week vóór de ingreep
+                                </div>
+                                <table class="payment-kv table-borderless">
+                                    <tr>
+                                        <td>Begunstigde</td>
+                                        <td>
+                                            <span t-out="o.drcolle_hospital_id.name or ''"/>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Rekening</td>
+                                        <td>
+                                            <span t-out="hospital_bank.acc_number or ''"/>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Mededeling</td>
+                                        <td>
+                                            <span t-out="o._drcolle_get_hospital_payment_reference()"/>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <p t-if="proof_email" class="u-text-center proof-email">
+                    Gelieve een bewijs van overschrijving te mailen naar
+                    <span t-out="proof_email"/>
+                </p>
+            </div>
+
+            <div class="page drcolle_hospital_invoice_v2 terms terms-start" style="page-break-before: always;">
+                <h4>Algemene voorwaarden — esthetische ingrepen</h4>
+
+                <h5>1. Karakter van de ingreep</h5>
+                <p>De geplande ingreep betreft een esthetische behandeling die op initiatief van de patiënt wordt
+                    uitgevoerd. Het doel is een verbetering van het uiterlijk of zelfbeeld. De behandeling is niet
+                    medisch noodzakelijk en wordt met de grootste zorg uitgevoerd, conform de geldende medische
+                    standaarden en deontologische richtlijnen.
+                </p>
+
+                <h5>2. Geen tussenkomst van mutualiteit of verzekering</h5>
+                <p>Esthetische ingrepen vallen buiten het terugbetalingssysteem van de verplichte ziekteverzekering.
+                    Bijgevolg zijn de kosten volledig ten laste van de patiënt, tenzij vooraf schriftelijke bevestiging
+                    werd verkregen van de hospitalisatieverzekering. De patiënt blijft zelf verantwoordelijk voor
+                    navraag bij zijn of haar verzekeraar.
+                </p>
+
+                <h5>3. Btw-regeling</h5>
+                <p>Bij esthetische ingrepen is wettelijk 21% btw verschuldigd op het ereloon en de bijkomende kosten,
+                    aangezien deze behandelingen niet onder de btw-vrijstelling voor therapeutische prestaties vallen.
+                    Enkel wanneer een onderdeel van de behandeling aantoonbaar medisch noodzakelijk is, kan dit
+                    afzonderlijk worden aangerekend zonder btw, conform artikel 44, par. 1, 1e van het Belgisch Wetboek
+                    op de btw.
+                </p>
+                <p>In dat geval wordt een separaat document opgesteld waarin de therapeutische aard van de betrokken
+                    prestatie wordt gemotiveerd. Dit document wordt bewaard in het patiëntendossier als bewijs voor de
+                    btw-vrijstelling. In deze overeenkomst worden btw-plichtige en btw-vrije prestaties steeds duidelijk
+                    van elkaar onderscheiden.
+                </p>
+
+                <h5>4. Kosten en supplementen</h5>
+                <p>Alle kosten, inclusief eventuele supplementen, worden vooraf transparant meegedeeld en zijn opgenomen
+                    in de overeenkomst. Tenzij anders vermeld, zijn bedragen inclusief of exclusief btw zoals
+                    aangegeven, conform de geldende regelgeving. Eventuele bijkomende kosten worden vooraf besproken
+                    indien voorzienbaar.
+                </p>
+
+                <h5>5. Betalingsvoorwaarden</h5>
+                <p>
+                    Het ziekenhuis- en anesthesiegedeelte dient uiterlijk 7 dagen vóór de ingreep te zijn voldaan op het
+                    rekeningnummer van het
+                    <span t-out="o.drcolle_hospital_id.name or 'ziekenhuis'"/>. Het honorarium voor de pre- en
+                    postoperatieve zorg en begeleiding is betaalbaar in de praktijk of
+                    via overschrijving op het rekeningnummer van
+                    <span t-out="company.name"/>, met de vermelde
+                    gestructureerde mededeling. Bij betaling
+                    wordt gevraagd om de juiste mededeling te gebruiken en bij voorkeur een betalingsbewijs te bezorgen.
+                </p>
+            </div>
+
+            <div class="page drcolle_hospital_invoice_v2 terms">
+                <h5>6. Geen resultaatsverbintenis</h5>
+                <p>De arts verbindt zich ertoe om de ingreep zorgvuldig en volgens de regels van de kunst uit te voeren,
+                    met het oog op een esthetisch en natuurlijk resultaat dat zo goed mogelijk aansluit bij de vooraf
+                    besproken verwachtingen. Toch is het belangrijk te begrijpen dat de arts zich engageert tot een
+                    inspanningsverbintenis, geen resultaatsverbintenis.
+                </p>
+                <p>Het eindresultaat wordt mede bepaald door individuele factoren zoals huidkwaliteit, leeftijd,
+                    genetische aanleg, roken, wondgenezing, medicatiegebruik, en het al dan niet correct opvolgen van de
+                    postoperatieve richtlijnen. Deze elementen liggen grotendeels buiten de controle van de arts.
+                </p>
+                <p>Het is dus essentieel dat u als patiënt de nazorginstructies nauwgezet volgt om de kans op een mooi
+                    en stabiel resultaat te maximaliseren. Indien bijkomende behandelingen of correcties nodig blijken
+                    om het beoogde resultaat te benaderen, worden deze in onderling overleg besproken en afzonderlijk
+                    aangerekend.
+                </p>
+
+                <h5>7. Annulatiebeleid</h5>
+                <p>Annulatie door de patiënt kan kosteloos tot uiterlijk 7 dagen vóór de geplande ingreep. Het reeds
+                    aangerekende honorarium voor de pre- en postoperatieve begeleiding blijft in dat geval verworven ter
+                    dekking van de reeds geleverde prestaties en de administratieve kosten. Bij annulatie door de arts
+                    wordt in overleg een nieuwe datum voorzien, zonder bijkomende kosten voor de patiënt.
+                </p>
+
+                <h5>8. Postoperatieve opvolging</h5>
+                <p>De pre- en postoperatieve opvolging is begrepen in het honorarium voor zorg en begeleiding. Dit omvat
+                    de geplande controleconsultaties, wondzorg en de nazorgbehandelingen die deel uitmaken van het
+                    hersteltraject. Indien bijkomende consultaties of behandelingen noodzakelijk zijn buiten het normale
+                    genezingsverloop, kunnen hier afzonderlijke kosten aan verbonden zijn. Dit wordt steeds vooraf
+                    besproken.
+                </p>
+
+                <h5>9. Contact bij vragen of bezorgdheden</h5>
+                <p>Wij hechten veel belang aan transparante communicatie en wederzijds vertrouwen. Heeft u na de ingreep
+                    vragen, twijfels of bezorgdheden? Aarzel dan niet om contact op te nemen. We bekijken dit graag
+                    samen en zoeken steeds naar een correcte en respectvolle oplossing.
+                </p>
+            </div>
+        </t>
+    </template>
+
+    <record id="drcolle_hospital_invoicing.action_report_hospital_invoice" model="ir.actions.report">
+        <field name="report_name">surgery_case_management.report_hospital_invoice_v2</field>
+        <field name="report_file">surgery_case_management.report_hospital_invoice_v2</field>
+        <field name="binding_model_id" ref="account.model_account_move"/>
+    </record>
+</odoo>

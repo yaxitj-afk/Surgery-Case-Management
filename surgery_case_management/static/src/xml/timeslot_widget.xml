@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<templates>
+
+    <!-- ── Time Slot dropdown widget template ────────────────────────── -->
+    <t t-name="surgery_case_management.SurgeryTimeSlot">
+        <div class="o_surgery_timeslot_wrapper">
+
+            <t t-if="props.readonly">
+                <!-- Read-only: just show the stored value or label -->
+                <span class="o_field_widget o_readonly">
+                    <t t-if="currentValue">
+                        <!-- Find label from slots list -->
+                        <t t-set="matched" t-value="slots.find(s => s.value === currentValue)"/>
+                        <t t-esc="currentValue"/>
+                    </t>
+                    <t t-else="">—</t>
+                </span>
+            </t>
+
+            <t t-else="">
+                <t t-if="!props.record.data.surgery_date">
+                    <!-- No date selected yet -->
+                    <span class="text-muted small">Select a surgery date first</span>
+                </t>
+                <t t-elif="slots.length === 0">
+                    <!-- Date selected but no slots configured -->
+                    <span class="text-danger small">
+                        <i class="fa fa-exclamation-triangle me-1"/>
+                        No time slots configured for this date
+                    </span>
+                </t>
+                <t t-else="">
+                    <select class="o_input o_surgery_timeslot_select"
+                            t-ref="slotSelect"
+                            t-att-value="currentValue"
+                            t-on-change="onChange">
+                        <option value="">-- Select a time slot --</option>
+                        <t t-foreach="slots" t-as="slot" t-key="slot.value">
+                            <option t-att-value="slot.value"
+                                    t-att-selected="slot.value === currentValue">
+                                <t t-esc="slot.value"/>
+                            </option>
+                        </t>
+                    </select>
+                </t>
+            </t>
+
+        </div>
+    </t>
+
+</templates>

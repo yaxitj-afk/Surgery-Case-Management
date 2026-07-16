@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+
+    <record id="res_config_settings_view_clinic_surgery" model="ir.ui.view">
+        <field name="name">res.config.settings.clinic.surgery</field>
+        <field name="model">res.config.settings</field>
+        <!-- Inherit the same base view that base_setup inherits from -->
+        <field name="inherit_id" ref="base.res_config_settings_view_form"/>
+        <field name="arch" type="xml">
+
+            <!-- Mirror the exact pattern from base_setup:
+                 xpath into //form, position inside, wrap in <app> -->
+            <xpath expr="//form" position="inside">
+
+                <app data-string="Surgery Automation"
+                     string="Surgery Automation"
+                     name="surgery_case_management"
+                     logo="/surgery_case_management/static/description/icon.png">
+
+                    <!-- ── 7.2 IC Reminder Engine ──────────────────────── -->
+                    <block title="IC Reminder Engine" name="ic_reminder_container">
+                        <setting string="Patient IC Reminder"
+                                 help="Send automatic IC reminder email to patient this many days before surgery (e.g. 3 = D-3d).">
+                            <field name="ic_patient_reminder_weeks"/>
+                            <span class="o_form_label ms-2">days before surgery</span>
+                        </setting>
+                        <setting string="Secretary Escalation Task"
+                                 help="Create an escalation task for the secretary this many days before surgery when IC is still unsigned (e.g. 2 = D-2d).">
+                            <field name="ic_secretary_escalation_weeks"/>
+                            <span class="o_form_label ms-2">days before surgery</span>
+                        </setting>
+                    </block>
+
+                    <!-- ── 7.3 Payment Guards — Hospital Fee ──────────── -->
+                    <block title="Payment Guards — Hospital Fee"
+                           name="payment_hospital_container">
+                        <setting string="Patient Reminder"
+                                 help="Send payment reminder email to patient this many days before surgery when hospital fee is unpaid (e.g. 10 = D-10d).">
+                            <field name="payment_patient_reminder_days"/>
+                            <span class="o_form_label ms-2">days before surgery</span>
+                        </setting>
+                        <setting string="Secretary Alert Task"
+                                 help="Create a secretary alert task this many days before surgery when hospital fee is still unpaid (e.g. 7 = D-7d).">
+                            <field name="payment_secretary_alert_days"/>
+                            <span class="o_form_label ms-2">days before surgery</span>
+                        </setting>
+                    </block>
+
+                    <!-- ── 7.3 Payment Guards — BV Honorarium ─────────── -->
+                    <block title="Payment Guards — BV Fee"
+                           name="payment_honorarium_container">
+                        <setting string="Patient Reminder"
+                                 help="Send Fee reminder email to patient this many days before surgery (e.g. 10 = D-10d).">
+                            <field name="honorarium_patient_reminder_days"/>
+                            <span class="o_form_label ms-2">days before surgery</span>
+                        </setting>
+                        <setting string="Secretary Alert Task"
+                                 help="Create a secretary alert task this many days before surgery when honorarium is unpaid (e.g. 7 = D-7d).">
+                            <field name="honorarium_secretary_alert_days"/>
+                            <span class="o_form_label ms-2">days before surgery</span>
+                        </setting>
+                    </block>
+
+                    <!-- ── 7.6 Pre-op Instruction Email ───────────────── -->
+                    <block title="Pre-op Instruction Email"
+                           name="preop_email_container">
+                        <setting string="Send Before Surgery"
+                                 help="Automatically send fasting, shaving, and check-in instructions this many days before surgery (default 1 = D-1).">
+                            <field name="preop_instruction_days_before"/>
+                            <span class="o_form_label ms-2">days before surgery</span>
+                        </setting>
+                    </block>
+
+                    <!-- ── 7.7 Review Request ──────────────────────────── -->
+                    <block title="Review Request Email"
+                           name="review_request_container">
+                        <setting string="Send After Surgery"
+                                 help="Send Google review invitation this many days after surgery (default 42 = D+6w). Only sent when 'Send Review Request' is enabled on the surgery case.">
+                            <field name="review_request_days_after"/>
+                            <span class="o_form_label ms-2">days after surgery</span>
+                        </setting>
+                        <setting string="Google Review URL"
+                                 help="Your practice Google Maps review link, e.g. https://g.page/r/…/review">
+                            <field name="google_review_url"
+                                   placeholder="https://g.page/r/…/review"/>
+                        </setting>
+                    </block>
+
+                </app>
+
+            </xpath>
+        </field>
+    </record>
+
+</odoo>

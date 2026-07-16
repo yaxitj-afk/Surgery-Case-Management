@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="ir_cron_surgery_automation_daily" model="ir.cron">
+        <field name="name">Surgery: Daily Automation</field>
+        <field name="model_id" ref="model_clinic_surgery_case"/>
+        <field name="state">code</field>
+        <field name="code">model.cron_surgery_automation_daily()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active">True</field>
+        <!-- Runs every day at 07:00 server time -->
+        <field name="nextcall" eval="(DateTime.now().replace(hour=7, minute=0, second=0)).strftime('%Y-%m-%d %H:%M:%S')"/>
+    </record>
+    <record id="ir_cron_sync_invoice_payments" model="ir.cron">
+        <field name="name">Surgery: Sync Fee Invoice Payments</field>
+        <field name="model_id" ref="model_clinic_surgery_case"/>
+        <field name="state">code</field>
+        <field name="code">model.cron_sync_invoice_payments()</field>
+        <field name="interval_number">1</field>
+        <field name="interval_type">days</field>
+        <field name="active">True</field>
+    </record>
+</odoo>

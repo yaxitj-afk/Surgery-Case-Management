@@ -1,0 +1,971 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<templates xml:space="preserve">
+
+<t t-name="surgery_case_management.SurgeryDashboard">
+  <div class="sd-scroll">
+  <div class="sd-root">
+
+    <!-- ═══════════ CASE-LEVEL MODE GUARD ═══════════
+         Everything inside this t-if is the ORIGINAL, unmodified dashboard.
+         state.caseMode is only ever true when the dashboard was opened from
+         a Surgery Case's "Dashboard" smart button, so the main Dashboard
+         menu item behaves exactly as before. -->
+    <t t-if="!state.caseMode">
+    <!-- ══════════════ HEADER ══════════════ -->
+    <div class="sd-header">
+      <div>
+        <h2 class="sd-title">Surgery Case Dashboard</h2>
+      </div>
+      <div class="sd-header-actions">
+        <button class="btn btn-primary sd-btn-sm" t-on-click="quickNewSurgery">+ New Surgery</button>
+        <button class="btn btn-secondary sd-btn-sm" t-on-click="quickNewPatient">+ New Patient</button>
+        <button class="btn btn-secondary sd-btn-sm" t-on-click="quickScheduleSurgery">Schedule</button>
+        <button class="btn btn-outline-secondary sd-btn-icon" title="Refresh" t-on-click="refresh">⟳</button>
+      </div>
+    </div>
+
+    <!-- ══════════════ FILTERS ══════════════ -->
+    <div class="sd-filters">
+      <div class="sd-filter">
+        <label>Date From</label>
+        <input type="date" t-model="state.filters.date_from"
+               t-att-max="state.filters.date_to"
+               t-on-change="(ev) => this.onFilterChange('date_from', ev)"/>
+      </div>
+      <div class="sd-filter">
+        <label>Date To</label>
+        <input type="date" t-model="state.filters.date_to"
+               t-att-min="state.filters.date_from"
+               t-on-change="(ev) => this.onFilterChange('date_to', ev)"/>
+      </div>
+      <div class="sd-filter sd-filter-patient" t-if="state.data">
+        <label>Patient</label>
+        <select t-on-change="(ev) => this.onFilterChange('patient_id', ev)">
+          <option value="">All Patients</option>
+          <t t-foreach="state.data.filter_options.patients" t-as="p" t-key="'flt-patient-' + p.id">
+            <option t-att-value="p.id" t-att-selected="state.filters.patient_id === p.id"><t t-esc="p.name"/></option>
+          </t>
+        </select>
+      </div>
+      <div class="sd-filter" t-if="state.data">
+        <label>Surgeon</label>
+        <select t-on-change="(ev) => this.onFilterChange('surgeon_id', ev)">
+          <option value="">All</option>
+          <t t-foreach="state.data.filter_options.surgeons" t-as="s" t-key="'flt-surgeon-' + s.id">
+            <option t-att-value="s.id" t-att-selected="state.filters.surgeon_id === s.id"><t t-esc="s.name"/></option>
+          </t>
+        </select>
+      </div>
+      <div class="sd-filter" t-if="state.data">
+        <label>Operating Block</label>
+        <select t-on-change="(ev) => this.onFilterChange('operating_block_id', ev)">
+          <option value="">All</option>
+          <t t-foreach="state.data.filter_options.operating_blocks" t-as="b" t-key="'flt-block-' + b.id">
+            <option t-att-value="b.id" t-att-selected="state.filters.operating_block_id === b.id"><t t-esc="b.name"/></option>
+          </t>
+        </select>
+      </div>
+      <div class="sd-filter" t-if="state.data">
+        <label>Procedure</label>
+        <select t-on-change="(ev) => this.onFilterChange('procedure_id', ev)">
+          <option value="">All</option>
+          <t t-foreach="state.data.filter_options.procedures" t-as="p" t-key="'flt-proc-' + p.id">
+            <option t-att-value="p.id" t-att-selected="state.filters.procedure_id === p.id"><t t-esc="p.name"/></option>
+          </t>
+        </select>
+      </div>
+      <div class="sd-filter" t-if="state.data">
+        <label>State</label>
+        <select t-on-change="(ev) => this.onFilterChange('state', ev)">
+          <option value="">All</option>
+          <t t-foreach="state.data.filter_options.states" t-as="st" t-key="'flt-state-' + st.id">
+            <option t-att-value="st.id" t-att-selected="state.filters.state === st.id"><t t-esc="st.name"/></option>
+          </t>
+        </select>
+      </div>
+
+      <button class="sd-reset-btn" t-on-click="resetFilters">
+          <i class="fa fa-refresh"/> Reset
+      </button>
+    </div>
+
+    <div t-if="state.loading" class="sd-loading">Loading dashboard…</div>
+
+    <t t-if="state.data">
+      <!-- ══════════════ KPI CARDS ══════════════ -->
+      <div class="sd-kpi-row">
+
+        <div class="sd-kpi-card" t-on-click="() => this.onKpiClick('total')">
+          <div class="sd-kpi-icon sd-icon-blue">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6a1 1 0 0 1 1 1v1H8V4a1 1 0 0 1 1-1Z"/><rect x="5" y="5" width="14" height="16" rx="2"/><path d="M9 12h6M9 16h6"/></svg>
+          </div>
+          <div class="sd-kpi-value"><t t-esc="state.data.kpis.total_cases.value"/></div>
+          <div class="sd-kpi-label">Total Surgery Cases</div>
+          <div t-if="state.data.kpis.total_cases.delta !== null" t-attf-class="sd-kpi-delta {{state.data.kpis.total_cases.delta >= 0 ? 'sd-up' : 'sd-down'}}">
+            <t t-esc="state.data.kpis.total_cases.delta >= 0 ? '▲' : '▼'"/> <t t-esc="Math.abs(state.data.kpis.total_cases.delta)"/>% vs last period
+          </div>
+        </div>
+
+        <div class="sd-kpi-card" t-on-click="() => this.onKpiClick('today')">
+          <div class="sd-kpi-icon sd-icon-teal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="M9 15l2 2 4-4"/></svg>
+          </div>
+          <div class="sd-kpi-value"><t t-esc="state.data.kpis.today_surgeries.value"/></div>
+          <div class="sd-kpi-label">Today's Surgeries</div>
+        </div>
+
+        <div class="sd-kpi-card" t-on-click="() => this.onKpiClick('upcoming')">
+          <div class="sd-kpi-icon sd-icon-indigo">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/><path d="M12 14v3l2 1"/></svg>
+          </div>
+          <div class="sd-kpi-value"><t t-esc="state.data.kpis.upcoming_surgeries.value"/></div>
+          <div class="sd-kpi-label">Upcoming Surgeries</div>
+        </div>
+
+        <div class="sd-kpi-card" t-on-click="() => this.onKpiClick('surgery_completed')">
+          <div class="sd-kpi-icon sd-icon-purple">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v6a4 4 0 0 0 8 0V4"/><circle cx="18" cy="16" r="3"/><path d="M14 9h2a2 2 0 0 1 2 2v1.5"/></svg>
+          </div>
+          <div class="sd-kpi-value"><t t-esc="state.data.kpis.surgery_completed_cases.value"/></div>
+          <div class="sd-kpi-label">Surgery Completed</div>
+          <div t-if="state.data.kpis.surgery_completed_cases.delta !== null" t-attf-class="sd-kpi-delta {{state.data.kpis.surgery_completed_cases.delta >= 0 ? 'sd-up' : 'sd-down'}}">
+            <t t-esc="state.data.kpis.surgery_completed_cases.delta >= 0 ? '▲' : '▼'"/> <t t-esc="Math.abs(state.data.kpis.surgery_completed_cases.delta)"/>% vs last period
+          </div>
+        </div>
+
+        <div class="sd-kpi-card" t-on-click="() => this.onKpiClick('cancelled')">
+          <div class="sd-kpi-icon sd-icon-red">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9 9l6 6M15 9l-6 6"/></svg>
+          </div>
+          <div class="sd-kpi-value"><t t-esc="state.data.kpis.cancelled_cases.value"/></div>
+          <div class="sd-kpi-label">Cancelled Cases</div>
+          <div t-if="state.data.kpis.cancelled_cases.delta !== null" t-attf-class="sd-kpi-delta {{state.data.kpis.cancelled_cases.delta &lt;= 0 ? 'sd-up' : 'sd-down'}}">
+            <t t-esc="state.data.kpis.cancelled_cases.delta >= 0 ? '▲' : '▼'"/> <t t-esc="Math.abs(state.data.kpis.cancelled_cases.delta)"/>% vs last period
+          </div>
+        </div>
+
+        <div class="sd-kpi-card" t-on-click="() => this.onKpiClick('reimbursed')">
+          <div class="sd-kpi-icon sd-icon-cyan">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6l7-3Z"/><path d="M9 12l2 2 4-4"/></svg>
+          </div>
+          <div class="sd-kpi-value"><t t-esc="state.data.kpis.reimbursed_cases.value"/></div>
+          <div class="sd-kpi-label">Reimbursed Surgeries</div>
+          <div class="sd-kpi-sub" t-if="state.data.kpis.reimbursed_amount">
+            Supplement: <t t-esc="formatMoney(state.data.kpis.reimbursed_amount)"/>
+          </div>
+        </div>
+
+        <div class="sd-kpi-card" t-on-click="() => this.onKpiClick('completed')">
+          <div class="sd-kpi-icon sd-icon-green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9"/></svg>
+          </div>
+          <div class="sd-kpi-value"><t t-esc="state.data.kpis.completed_cases.value"/></div>
+          <div class="sd-kpi-label">Settled Cases</div>
+          <div t-if="state.data.kpis.completed_cases.delta !== null" t-attf-class="sd-kpi-delta {{state.data.kpis.completed_cases.delta >= 0 ? 'sd-up' : 'sd-down'}}">
+            <t t-esc="state.data.kpis.completed_cases.delta >= 0 ? '▲' : '▼'"/> <t t-esc="Math.abs(state.data.kpis.completed_cases.delta)"/>% vs last period
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════ SURGERY PROGRESS PIPELINE (own full-width section) ══════════════ -->
+      <div class="sd-panel-row sd-pipeline-row">
+        <div class="sd-panel sd-panel-full sd-pipeline-panel">
+          <div class="sd-pipeline-head">
+            <div class="sd-panel-title sd-pipeline-title">Surgery Progress Pipeline</div>
+          </div>
+
+          <div class="sd-pipeline-v2">
+
+            <div class="sd-pipeline-v2-step" t-on-click="() => this.onPipelineClick('admission')">
+              <div class="sd-pipeline-v2-circle sd-pv2-blue-light">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>
+              </div>
+              <div class="sd-pipeline-v2-label">Admission</div>
+              <div class="sd-pipeline-v2-value"><t t-esc="state.data.pipeline.admission"/></div>
+              <div class="sd-pipeline-v2-unit">Cases</div>
+            </div>
+
+            <div class="sd-pipeline-v2-connector">
+              <span class="sd-pipeline-v2-connector-line"/>
+              <span class="sd-pipeline-v2-connector-dot sd-pv2-dot-blue"/>
+            </div>
+
+            <div class="sd-pipeline-v2-step" t-on-click="() => this.onPipelineClick('scheduled')">
+             <div class="sd-pipeline-v2-circle sd-pv2-indigo-light">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18"/></svg>
+              </div>
+              <div class="sd-pipeline-v2-label">Scheduled</div>
+              <div class="sd-pipeline-v2-value"><t t-esc="state.data.pipeline.scheduled"/></div>
+              <div class="sd-pipeline-v2-unit">Cases</div>
+            </div>
+
+            <div class="sd-pipeline-v2-connector">
+              <span class="sd-pipeline-v2-connector-line"/>
+              <span class="sd-pipeline-v2-connector-dot sd-pv2-dot-teal"/>
+            </div>
+
+            <div class="sd-pipeline-v2-step" t-on-click="() => this.onPipelineClick('in_progress')">
+              <div class="sd-pipeline-v2-circle sd-pv2-teal-light">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 4v6a4 4 0 0 0 8 0V4"/><circle cx="18" cy="16" r="3"/><path d="M14 9h2a2 2 0 0 1 2 2v1.5"/></svg>
+              </div>
+              <div class="sd-pipeline-v2-label">In Progress</div>
+              <div class="sd-pipeline-v2-value"><t t-esc="state.data.pipeline.in_progress"/></div>
+              <div class="sd-pipeline-v2-unit">Cases</div>
+            </div>
+
+            <div class="sd-pipeline-v2-connector">
+              <span class="sd-pipeline-v2-connector-line"/>
+              <span class="sd-pipeline-v2-connector-dot sd-pv2-dot-orange"/>
+            </div>
+
+            <div class="sd-pipeline-v2-step" t-on-click="() => this.onPipelineClick('recovery')">
+              <div class="sd-pipeline-v2-circle sd-pv2-orange-light">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 8.6c0 4.5-8.8 10.4-8.8 10.4S3.2 13.1 3.2 8.6a4.6 4.6 0 0 1 8.8-1.9 4.6 4.6 0 0 1 8.8 1.9Z"/><path d="M2 12h4l1.5-3L10 15l1.5-4.5L13 12h4"/></svg>
+              </div>
+              <div class="sd-pipeline-v2-label">Recovery</div>
+              <div class="sd-pipeline-v2-value"><t t-esc="state.data.pipeline.recovery"/></div>
+              <div class="sd-pipeline-v2-unit">Cases</div>
+            </div>
+
+            <div class="sd-pipeline-v2-connector">
+              <span class="sd-pipeline-v2-connector-line"/>
+              <span class="sd-pipeline-v2-connector-dot sd-pv2-dot-green"/>
+            </div>
+
+            <div class="sd-pipeline-v2-step" t-on-click="() => this.onPipelineClick('completed')">
+              <div class="sd-pipeline-v2-circle sd-pv2-green-light">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.5 2.5L16 9"/></svg>
+              </div>
+              <div class="sd-pipeline-v2-label">Completed</div>
+              <div class="sd-pipeline-v2-value"><t t-esc="state.data.pipeline.completed"/></div>
+              <div class="sd-pipeline-v2-unit">Cases</div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════ CHARTS ══════════════ -->
+      <div class="sd-charts-row">
+        <div class="sd-panel sd-panel-grow">
+         <div class="sd-panel-title">Monthly Surgery Trend</div>
+          <div class="sd-stat-strip">
+            <div class="sd-stat-chip">
+              <div class="sd-stat-value"><t t-esc="trendStats().current"/></div>
+              <div class="sd-stat-label">This Month</div>
+            </div>
+            <div class="sd-stat-chip">
+              <div class="sd-stat-value"><t t-esc="trendStats().avg"/></div>
+              <div class="sd-stat-label">Avg / Month</div>
+            </div>
+            <div class="sd-stat-chip">
+              <div class="sd-stat-value"><t t-esc="trendStats().peakValue"/></div>
+              <div class="sd-stat-label">Peak (<t t-esc="trendStats().peakLabel"/>)</div>
+            </div>
+          </div>
+          <svg class="sd-svg-chart" viewBox="0 0 560 200" preserveAspectRatio="none">
+            <line x1="34" y1="20" x2="34" y2="180" class="sd-axis-line-y"/>
+            <t t-foreach="lineChartYTicks()" t-as="tick" t-key="'trend-tick-' + tick_index">
+              <line x1="34" t-att-y1="tick.y" x2="536" t-att-y2="tick.y"
+                    t-attf-class="sd-axis-line {{tick.value === 0 ? 'sd-axis-line-base' : ''}}"/>
+              <text x="28" t-att-y="tick.y + 3" text-anchor="end" class="sd-chart-axis-label"><t t-esc="tick.value"/></text>
+            </t>
+            <path t-att-d="lineChartAreaPath()" fill="rgba(37,99,235,0.08)"/>
+            <polyline t-att-points="lineChartPolyline()" fill="none" stroke="#2563eb" stroke-width="2.5"/>
+            <t t-foreach="lineChartPoints()" t-as="pt" t-key="'trend-pt-' + pt_index">
+              <circle t-att-cx="pt.x" t-att-cy="pt.y" r="4.5" fill="#2563eb" class="sd-chart-point"
+              t-on-click="() => this.onLinePointClick(pt.dateFrom, pt.dateTo, pt.label)"/>
+              <text t-att-x="pt.x" t-att-y="pt.y - 10" text-anchor="middle" class="sd-chart-point-value"><t t-esc="pt.count"/></text>
+              <text t-att-x="pt.x" y="196" text-anchor="middle" class="sd-chart-axis-label"><t t-esc="pt.label"/></text>
+            </t>
+          </svg>
+        </div>
+
+        <div class="sd-panel">
+          <div class="sd-panel-title">Surgery Status Distribution</div>
+          <div class="sd-donut-wrap">
+            <svg viewBox="0 0 160 160" class="sd-donut-svg">
+              <g transform="rotate(-90 80 80)">
+                <circle cx="80" cy="80" r="60" fill="none" stroke="#f1f5f9" stroke-width="20"/>
+                <t t-foreach="donutSegments()" t-as="seg" t-key="'donut-seg-' + seg_index">
+                  <circle cx="80" cy="80" r="60" fill="none" t-att-stroke="seg.color" stroke-width="20"
+                          t-att-stroke-dasharray="seg.dasharray" t-att-stroke-dashoffset="seg.dashoffset"
+                          class="sd-donut-seg" t-on-click="() => this.onStatusSliceClick(seg.state, seg.label)"/>
+                </t>
+              </g>
+            </svg>
+            <div class="sd-donut-center">
+              <div class="sd-donut-total"><t t-esc="state.data.kpis.total_cases.value"/></div>
+              <div class="sd-donut-total-label">Total</div>
+            </div>
+          </div>
+          <div class="sd-legend">
+            <div class="sd-legend-item" t-foreach="state.data.status_distribution" t-as="d" t-key="'donut-legend-' + d.label"
+                 t-on-click="() => this.onStatusSliceClick(d.state, d.label)">
+              <span class="sd-legend-dot" t-attf-style="background:{{d.color}}"/>
+              <t t-esc="d.label"/> — <t t-esc="d.value"/> (<t t-esc="d.pct"/>%)
+            </div>
+          </div>
+        </div>
+
+        <div class="sd-panel sd-panel-grow">
+          <div class="sd-panel-title">Procedures by Type</div>
+          <div class="sd-stat-strip">
+            <div class="sd-stat-chip">
+              <div class="sd-stat-value"><t t-esc="procedureStats().total"/></div>
+              <div class="sd-stat-label">Total Cases</div>
+            </div>
+            <div class="sd-stat-chip sd-stat-chip-wide">
+              <div class="sd-stat-value"><t t-esc="procedureStats().topName"/></div>
+              <div class="sd-stat-label">Most Common (<t t-esc="procedureStats().topPct"/>%)</div>
+            </div>
+          </div>
+          <svg class="sd-svg-chart" viewBox="0 0 560 200" preserveAspectRatio="none">
+            <line x1="34" y1="20" x2="34" y2="180" class="sd-axis-line-y"/>
+            <t t-foreach="procedureYTicks()" t-as="tick" t-key="'proc-tick-' + tick_index">
+              <line x1="34" t-att-y1="tick.y" x2="536" t-att-y2="tick.y"
+                    t-attf-class="sd-axis-line {{tick.value === 0 ? 'sd-axis-line-base' : ''}}"/>
+              <text x="28" t-att-y="tick.y + 3" text-anchor="end" class="sd-chart-axis-label"><t t-esc="tick.value"/></text>
+            </t>
+            <t t-foreach="procedureBars()" t-as="bar" t-key="'proc-bar-' + bar_index">
+
+              <rect t-att-x="bar.x" t-att-y="bar.y" t-att-width="bar.width" t-att-height="bar.height"
+                    rx="4" t-att-fill="bar.color" class="sd-chart-bar"
+                    t-on-click="() => this.onProcedureBarClick(bar.procedure_id, bar.name)"/>
+              <text t-attf-x="{{bar.x + bar.width / 2}}" t-att-y="bar.y - 6" text-anchor="middle" class="sd-chart-bar-value"><t t-esc="bar.count"/></text>
+              <text t-attf-x="{{bar.x + bar.width / 2}}" t-att-y="bar.labelY" text-anchor="middle" class="sd-chart-axis-label"><t t-esc="bar.name"/></text>
+            </t>
+          </svg>
+        </div>
+
+        <div class="sd-panel">
+          <div class="sd-panel-title">Surgeon Workload</div>
+          <div class="sd-stat-strip">
+            <div class="sd-stat-chip">
+              <div class="sd-stat-value"><t t-esc="workloadStats().total"/></div>
+              <div class="sd-stat-label">Cases</div>
+            </div>
+            <div class="sd-stat-chip">
+              <div class="sd-stat-value"><t t-esc="workloadStats().surgeons"/></div>
+              <div class="sd-stat-label">Surgeons</div>
+            </div>
+          </div>
+
+          <div class="sd-workload-list">
+            <div class="sd-workload-card" t-foreach="state.data.surgeon_workload" t-as="w" t-key="'workload-' + w.surgeon_id"
+                 t-on-click="() => this.onSurgeonBarClick(w.surgeon_id, w.name)">
+              <div class="sd-workload-avatar"><t t-esc="initials(w.name)"/></div>
+              <div class="sd-workload-body">
+                <div class="sd-workload-top">
+                  <div class="sd-workload-name"><t t-esc="w.name"/></div>
+                  <div class="sd-workload-count"><t t-esc="w.count"/> cases</div>
+                </div>
+                <div class="sd-workload-bar-track">
+                  <div class="sd-workload-bar-fill" t-attf-style="width:{{barWidthPct(w.count)}}%"/>
+                </div>
+                <div class="sd-workload-share"><t t-esc="workloadSharePct(w.count)"/>% of this month's caseload</div>
+              </div>
+            </div>
+            <div t-if="!state.data.surgeon_workload.length" class="sd-empty">No data for this period</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════ SCHEDULE / ADMISSIONS ROW ══════════════ -->
+      <div class="sd-panel-row">
+        <div class="sd-panel sd-panel-third">
+          <div class="sd-panel-title">Today's Surgery Schedule</div>
+          <table class="sd-table">
+            <thead><tr><th>Time</th><th>Patient</th><th>Procedure</th><th>Surgeon</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr t-foreach="state.data.today_schedule.slice(0, 3)" t-as="r" t-key="'today-' + r.id" t-on-click="() => this.openCaseForm(r.id)">
+                <td><t t-esc="r.time"/></td>
+                <td><t t-esc="r.patient"/></td>
+                <td><t t-esc="r.procedure"/></td>
+                <td><t t-esc="r.surgeon"/></td>
+                <td><span t-attf-class="sd-badge {{stateBadgeClass(r.state)}}"><t t-esc="stateLabel(r.state)"/></span></td>
+              </tr>
+              <tr t-if="!state.data.today_schedule.length"><td colspan="5" class="sd-empty">No surgeries today</td></tr>
+            </tbody>
+          </table>
+          <div class="sd-panel-footer-link" t-on-click="() => this.onKpiClick('today')">
+            View Full Schedule →
+          </div>
+        </div>
+
+        <div class="sd-panel sd-panel-third">
+          <div class="sd-panel-title">Surgery Calendar (This Week)</div>
+          <table class="sd-cal-table">
+            <thead>
+              <tr>
+                <th>Location</th>
+                <t t-foreach="state.data.week_calendar.day_labels" t-as="dl" t-key="'cal-head-' + dl_index"><th><t t-esc="dl"/></th></t>
+              </tr>
+            </thead>
+            <tbody>
+              <tr t-foreach="state.data.week_calendar.rows" t-as="row" t-key="'cal-row-' + row_index">
+                <td class="sd-cal-loc"><t t-esc="row.location"/></td>
+                <t t-foreach="row.cells" t-as="cell" t-key="'cal-cell-' + row_index + '-' + cell_index">
+                  <td t-attf-class="sd-cal-cell {{calCellClass(cell.count)}}"
+                      t-on-click="() => this.onCalendarCellClick(row.location, row.loc_type, state.data.week_calendar.days[cell_index])">
+                    <t t-esc="cell.count || ''"/>
+                  </td>
+                </t>
+              </tr>
+            </tbody>
+          </table>
+          <div class="sd-cal-summary">
+            <div class="sd-cal-summary-top">
+              <div class="sd-cal-summary-metric">
+                <span class="sd-cal-summary-value"><t t-esc="weekCalendarStats().total"/></span>
+                <span class="sd-cal-summary-label">This Week</span>
+              </div>
+              <div class="sd-cal-summary-metric">
+                <span class="sd-cal-summary-value"><t t-esc="weekCalendarStats().busiestValue"/></span>
+                <span class="sd-cal-summary-label">Busiest — <t t-esc="weekCalendarStats().busiestLabel"/></span>
+              </div>
+            </div>
+            <div class="sd-cal-loc-row" t-foreach="weekCalendarStats().locations" t-as="loc" t-key="'cal-loc-' + loc_index">
+              <span class="sd-cal-loc-name"><t t-esc="loc.name"/></span>
+              <div class="sd-cal-loc-bar-track"><div class="sd-cal-loc-bar-fill" t-attf-style="width:{{loc.pct}}%"/></div>
+              <span class="sd-cal-loc-count"><t t-esc="loc.count"/></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="sd-panel sd-panel-third">
+          <div class="sd-panel-title">Upcoming Admissions</div>
+          <table class="sd-table">
+            <thead><tr><th>Date</th><th>Patient</th><th>Procedure</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr t-foreach="state.data.upcoming_admissions.slice(0, 4)" t-as="r" t-key="'upcoming-' + r.id" t-on-click="() => this.openCaseForm(r.id)">
+                <td><t t-esc="formatDate(r.date)"/></td>
+                <td><t t-esc="r.patient"/></td>
+                <td><t t-esc="r.procedure"/></td>
+                <td><span t-attf-class="sd-badge {{stateBadgeClass(r.state)}}"><t t-esc="stateLabel(r.state)"/></span></td>
+              </tr>
+              <tr t-if="!state.data.upcoming_admissions.length"><td colspan="4" class="sd-empty">Nothing upcoming</td></tr>
+            </tbody>
+          </table>
+          <div class="sd-panel-footer-link" t-on-click="() => this.onKpiClick('upcoming')">
+            View All Admissions →
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════ ALERTS / FOLLOW-UP ROW ══════════════ -->
+      <div class="sd-panel-row">
+        <div class="sd-panel sd-panel-third">
+          <div class="sd-panel-title">Alerts &amp; Notifications</div>
+          <div t-foreach="state.data.alerts.slice(0, 4)" t-as="a" t-key="'alert-' + a.id"
+               t-attf-class="sd-alert sd-alert-{{a.type}}" t-on-click="() => this.openCaseForm(a.case_id)">
+            <div class="sd-alert-title"><t t-esc="a.title"/></div>
+            <div class="sd-alert-body"><t t-esc="a.body"/></div>
+          </div>
+          <div t-if="!state.data.alerts.length" class="sd-empty">No active alerts</div>
+          <div t-if="state.data.alerts.length" class="sd-panel-footer-link" t-on-click="() => this.onViewAllAlerts()">
+            View Alerts →
+          </div>
+        </div>
+
+        <div class="sd-panel sd-panel-third">
+          <div class="sd-panel-title">Recent Completed Surgeries</div>
+          <table class="sd-table">
+            <thead><tr><th>Date</th><th>Patient</th><th>Procedure</th><th>Surgeon</th></tr></thead>
+            <tbody>
+              <tr t-foreach="state.data.recent_completed.slice(0, 4)" t-as="r" t-key="'completed-' + r.id" t-on-click="() => this.openCaseForm(r.id)">
+                <td><t t-esc="formatDate(r.date)"/></td>
+                <td><t t-esc="r.patient"/></td>
+                <td><t t-esc="r.procedure"/></td>
+                <td><t t-esc="r.surgeon"/></td>
+              </tr>
+              <tr t-if="!state.data.recent_completed.length"><td colspan="4" class="sd-empty">No completed cases yet</td></tr>
+            </tbody>
+          </table>
+          <div class="sd-panel-footer-link" t-on-click="() => this.onKpiClick('completed')">
+            View All Completed Cases →
+          </div>
+        </div>
+
+        <div class="sd-panel sd-panel-third">
+          <div class="sd-panel-title">Pending Post-Op Consultations</div>
+          <table class="sd-table">
+            <thead><tr><th>Date</th><th>Patient</th><th>Procedure</th></tr></thead>
+            <tbody>
+              <tr t-foreach="state.data.pending_postop.slice(0, 6)" t-as="r" t-key="'postop-' + r.id" t-on-click="() => this.openPostopConsult(r.id)">
+                <td t-attf-class="{{r.overdue ? 'sd-overdue' : ''}}"><t t-esc="formatDate(r.date)"/></td>
+                <td><t t-esc="r.patient"/></td>
+                <td><t t-esc="r.procedure"/></td>
+              </tr>
+              <tr t-if="!state.data.pending_postop.length"><td colspan="3" class="sd-empty">All caught up</td></tr>
+            </tbody>
+          </table>
+          <div class="sd-panel-footer-link" t-on-click="() => this.openPostopConsultList()">
+            View All Consultations →
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════ SIGNATURES ROW ══════════════ -->
+      <div class="sd-panel-row">
+        <div class="sd-panel sd-panel-third sd-sign-panel">
+          <div class="sd-panel-title-row">
+            <div class="sd-panel-title sd-no-mb">Pending Signatures</div>
+            <span class="sd-count-pill" t-if="state.data.pending_signatures.length"><t t-esc="state.data.pending_signatures.length"/></span>
+          </div>
+
+          <div class="sd-sign-list">
+            <div class="sd-sign-card" t-foreach="state.data.pending_signatures.slice(0, 3)" t-as="s" t-key="'sign-' + s.id">
+              <div class="sd-sign-icon"><i class="fa fa-pencil-square-o"/></div>
+              <div class="sd-sign-body">
+                <div class="sd-sign-ref"><t t-esc="s.reference"/></div>
+                <div class="sd-sign-case"><i class="fa fa-folder-o"/> <t t-esc="s.case_name"/></div>
+                <div class="sd-sign-who" t-if="s.pending_signers">Awaiting: <t t-esc="s.pending_signers"/></div>
+              </div>
+              <button class="sd-sign-btn" t-on-click="() => this.openSignRequest(s.id)">Sign</button>
+            </div>
+            <div t-if="!state.data.pending_signatures.length" class="sd-empty">Nothing pending</div>
+          </div>
+
+          <div t-if="state.data.pending_signatures.length" class="sd-panel-footer-link" t-on-click="() => this.openAllSignRequests()">
+            View All Signatures →
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════ FINANCIAL OVERVIEW ══════════════ -->
+      <div class="sd-panel-row">
+        <div class="sd-panel sd-panel-full">
+          <div class="sd-panel-title">Financial Overview — Invoices &amp; Payments</div>
+          <div class="sd-fin-stat-row">
+            <div class="sd-fin-stat">
+              <div class="sd-fin-stat-value"><t t-esc="formatMoney(state.data.financial.total_invoiced)"/></div>
+              <div class="sd-fin-stat-label">Total Invoiced (<t t-esc="state.data.financial.invoice_count"/>)</div>
+            </div>
+            <div class="sd-fin-stat sd-fin-stat-green">
+              <div class="sd-fin-stat-value"><t t-esc="formatMoney(state.data.financial.total_paid)"/></div>
+              <div class="sd-fin-stat-label">Payment Received</div>
+            </div>
+            <div class="sd-fin-stat sd-fin-stat-amber">
+              <div class="sd-fin-stat-value"><t t-esc="formatMoney(state.data.financial.total_outstanding)"/></div>
+              <div class="sd-fin-stat-label">Pending Payment</div>
+            </div>
+            <div class="sd-fin-stat sd-fin-stat-red">
+              <div class="sd-fin-stat-value"><t t-esc="formatMoney(state.data.financial.total_overdue)"/></div>
+              <div class="sd-fin-stat-label">Overdue (<t t-esc="state.data.financial.overdue_count"/>)</div>
+            </div>
+          </div>
+          <table class="sd-table">
+            <thead><tr><th>Invoice</th><th>Patient</th><th>Invoice Date</th><th>Due Date</th><th>Amount</th><th>Paid</th><th>Status</th></tr></thead>
+            <tbody>
+              <tr t-foreach="state.data.financial.rows.slice(0, 6)" t-as="r" t-key="'inv-' + r.id" t-on-click="() => this.openInvoice(r.id)">
+                <td><t t-esc="r.number"/></td>
+                <td><t t-esc="r.patient"/></td>
+                <td><t t-esc="formatDate(r.date)"/></td>
+                <td><t t-esc="formatDate(r.due_date)"/></td>
+                <td><t t-esc="formatMoney(r.amount_total)"/></td>
+                <td t-attf-class="{{r.amount_paid > 0 ? 'sd-paid-amount' : ''}}"><t t-esc="formatMoney(r.amount_paid)"/></td>
+                <td><span t-attf-class="sd-badge {{paymentBadgeClass(r.payment_state)}}"><t t-esc="r.payment_label"/></span></td>
+              </tr>
+              <tr t-if="!state.data.financial.rows.length"><td colspan="7" class="sd-empty">No invoices yet</td></tr>
+            </tbody>
+          </table>
+          <div class="sd-panel-footer-link" t-on-click="() => this.openAllInvoices()">
+            View All Invoices →
+          </div>
+        </div>
+      </div>
+    </t>
+
+    </t>
+    <t t-else="">
+      <t t-call="surgery_case_management.SurgeryCaseDashboard"/>
+    </t>
+  </div>
+  </div>
+</t>
+
+<!-- ═══════════════════════════════════════════════════════════════════
+     CASE-LEVEL DASHBOARD (single Surgery Case)
+     Opened via the "Dashboard" smart button on a surgery case. Reuses the
+     same sd- CSS classes/component so it looks and feels like the main
+     dashboard, but shows only this one case's data and never touches the
+     main dashboard's data, filters, or menu action.
+═══════════════════════════════════════════════════════════════════ -->
+<t t-name="surgery_case_management.SurgeryCaseDashboard">
+  <div t-if="state.loading" class="scd-loading">
+    <div class="scd-spinner"/>
+    <div>Loading case dashboard…</div>
+  </div>
+
+  <t t-if="!state.loading and state.caseData and state.caseData.case">
+    <t t-set="c" t-value="state.caseData"/>
+
+    <div class="scd-wrap">
+
+      <!-- ══════════════ RISK BANNER ══════════════ -->
+      <div class="scd-risk-banner" t-if="c.case.at_risk">
+        <i class="fa fa-exclamation-triangle"/>
+        <span><b>Surgery at risk:</b> <t t-esc="c.case.at_risk_reason or 'Review required'"/></span>
+      </div>
+
+      <!-- ══════════════ HERO HEADER ══════════════ -->
+      <div class="scd-hero">
+        <div class="scd-hero-top">
+          <button class="scd-refresh-btn" title="Refresh" t-on-click="refresh"><i class="fa fa-refresh"/></button>
+          <button class="scd-back-btn" t-on-click="backToSurgery">
+            <i class="fa fa-arrow-left"/> Back to Surgery
+          </button>
+        </div>
+
+        <div class="scd-hero-body">
+          <div class="scd-hero-title-row">
+            <h1 class="scd-hero-title"><t t-esc="c.case.name"/></h1>
+            <span t-attf-class="scd-status-pill scd-status-{{c.case.state}}"><t t-esc="c.case.state_label"/></span>
+          </div>
+          <div class="scd-hero-sub" t-if="c.case.procedure">
+            <i class="fa fa-heartbeat"/> <t t-esc="c.case.procedure"/>
+            <t t-if="c.case.anesthesia"> · <t t-esc="c.case.anesthesia"/></t>
+          </div>
+
+          <div class="scd-people-row">
+            <div class="scd-person-card scd-person-clickable" t-on-click="openCasePatient" title="Open patient record">
+              <div class="scd-avatar scd-avatar-patient"><t t-esc="initials(c.case.patient)"/></div>
+              <div class="scd-person-info">
+                <label>Patient</label>
+                <span><t t-esc="c.case.patient"/></span>
+                <div class="scd-person-contact">
+                  <span t-if="c.case.patient_phone"><i class="fa fa-phone"/> <t t-esc="c.case.patient_phone"/></span>
+                  <span t-if="c.case.patient_email"><i class="fa fa-envelope"/> <t t-esc="c.case.patient_email"/></span>
+                </div>
+              </div>
+            </div>
+            <div class="scd-person-card scd-person-clickable" t-on-click="() => this.openCaseUser(c.case.surgeon_id)" title="Open doctor record">
+              <div class="scd-avatar scd-avatar-doctor"><t t-esc="initials(c.case.surgeon)"/></div>
+              <div class="scd-person-info">
+                <label>Doctor</label>
+                <span><t t-esc="c.case.surgeon"/></span>
+                <div class="scd-person-contact">
+                  <span t-if="c.case.surgeon_phone"><i class="fa fa-phone"/> <t t-esc="c.case.surgeon_phone"/></span>
+                  <span t-if="c.case.surgeon_email"><i class="fa fa-envelope"/> <t t-esc="c.case.surgeon_email"/></span>
+                </div>
+              </div>
+            </div>
+            <div class="scd-person-card scd-person-clickable" t-on-click="() => this.openCaseUser(c.case.secretary_id)" title="Open secretary record">
+              <div class="scd-avatar scd-avatar-secretary"><t t-esc="initials(c.case.secretary)"/></div>
+              <div class="scd-person-info">
+                <label>Secretary</label>
+                <span><t t-esc="c.case.secretary"/></span>
+              </div>
+            </div>
+            <div class="scd-person-card scd-person-card-date scd-person-clickable" t-on-click="scrollToSchedule" title="Jump to Schedule &amp; Admission">
+              <div class="scd-avatar scd-avatar-date"><i class="fa fa-calendar"/></div>
+              <div class="scd-person-info">
+                <label>Surgery Date</label>
+                <span><t t-esc="formatDate(c.case.surgery_date)"/></span>
+                <div class="scd-person-contact" t-if="c.schedule and c.schedule.time_slot">
+                  <i class="fa fa-clock-o"/> <t t-esc="c.schedule.time_slot"/>
+                  <t t-if="c.schedule.end_time"> – <t t-esc="c.schedule.end_time"/></t>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════ KPI CARDS ══════════════ -->
+      <div class="scd-kpi-row" t-if="c.kpis">
+        <div class="scd-kpi-card" t-on-click="() => this.openCaseTasks()">
+          <div class="scd-kpi-icon scd-grad-blue"><i class="fa fa-tasks"/></div>
+          <div class="scd-kpi-value"><t t-esc="c.kpis.tasks_total"/></div>
+          <div class="scd-kpi-label">Total Tasks</div>
+          <div class="scd-kpi-bar"><div class="scd-kpi-bar-fill scd-fill-blue"
+               t-attf-style="width: {{c.kpis.tasks_total ? Math.round(c.kpis.tasks_done / c.kpis.tasks_total * 100) : 0}}%"/></div>
+        </div>
+        <div class="scd-kpi-card" t-on-click="() => this.openCaseTasks(true)">
+          <div class="scd-kpi-icon scd-grad-green"><i class="fa fa-check"/></div>
+          <div class="scd-kpi-value"><t t-esc="c.kpis.tasks_done"/></div>
+          <div class="scd-kpi-label">Tasks Done</div>
+          <div class="scd-kpi-sub scd-text-green" t-if="c.kpis.tasks_total">
+            <t t-esc="Math.round(c.kpis.tasks_done / c.kpis.tasks_total * 100)"/>% complete
+          </div>
+        </div>
+        <div class="scd-kpi-card">
+          <div class="scd-kpi-icon scd-grad-cyan"><i class="fa fa-user"/></div>
+          <div class="scd-kpi-value"><t t-esc="c.kpis.secretary_done"/><span class="scd-kpi-value-of">/<t t-esc="c.kpis.secretary_total"/></span></div>
+          <div class="scd-kpi-label">Secretary Tasks Done</div>
+        </div>
+        <div class="scd-kpi-card">
+          <div class="scd-kpi-icon scd-grad-purple"><i class="fa fa-file-pdf-o"/></div>
+          <div class="scd-kpi-value"><t t-esc="c.kpis.brochure_count"/></div>
+          <div class="scd-kpi-label">Brochures</div>
+          <div class="scd-kpi-sub" t-attf-class="{{c.brochures and c.brochures.sent ? 'scd-text-green' : 'scd-text-amber'}}">
+            <t t-esc="c.brochures and c.brochures.sent ? 'Sent to patient' : 'Not sent yet'"/>
+          </div>
+        </div>
+        <div class="scd-kpi-card" t-on-click="() => this.openCaseConsents()">
+          <div class="scd-kpi-icon scd-grad-teal"><i class="fa fa-pencil-square-o"/></div>
+          <div class="scd-kpi-value"><t t-esc="c.kpis.consent_count"/></div>
+          <div class="scd-kpi-label">Consent Documents</div>
+          <div class="scd-kpi-sub" t-attf-class="{{c.kpis.consent_signed ? 'scd-text-green' : 'scd-text-amber'}}">
+            <t t-esc="c.kpis.consent_signed ? 'Consent Signed' : 'Consent Unsigned'"/>
+          </div>
+        </div>
+        <div class="scd-kpi-card" t-on-click="() => this.openCaseInvoices()">
+          <div class="scd-kpi-icon scd-grad-indigo"><i class="fa fa-file-text-o"/></div>
+          <div class="scd-kpi-value"><t t-esc="c.kpis.invoice_count"/></div>
+          <div class="scd-kpi-label">Invoices</div>
+          <div class="scd-kpi-sub" t-if="c.financial">
+            <t t-esc="formatMoney(c.financial.total_invoiced)"/>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══════════════ MAIN GRID ══════════════ -->
+      <div class="scd-grid">
+        <!-- ── MAIN COLUMN ── -->
+        <div class="scd-col-main">
+          <!-- Tasks -->
+          <div class="scd-panel" t-if="c.tasks">
+            <div class="scd-panel-header">
+              <h3><i class="fa fa-tasks scd-panel-icon scd-text-blue"/> Tasks</h3>
+              <span class="scd-panel-count"><t t-esc="c.kpis.tasks_done"/> / <t t-esc="c.kpis.tasks_total"/> done</span>
+            </div>
+            <table class="scd-table">
+              <thead><tr><th>Task</th><th>Assigned To</th><th>Deadline</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr t-foreach="c.tasks.rows.slice(0, 4)" t-as="t" t-key="'task-' + t.id" t-on-click="() => this.openTask(t.id)">
+                  <td><t t-esc="t.name"/></td>
+                  <td><span class="scd-chip"><t t-esc="t.assignees or '-'"/></span></td>
+                  <td><t t-esc="formatDate(t.deadline)"/></td>
+                  <td><span t-attf-class="scd-badge {{t.done ? 'scd-badge-green' : 'scd-badge-amber'}}"><t t-esc="t.done ? 'Done' : 'Pending'"/></span></td>
+                </tr>
+                <tr t-if="!c.tasks.rows.length"><td colspan="4" class="scd-empty">No tasks yet</td></tr>
+              </tbody>
+            </table>
+            <div t-if="c.tasks.rows.length > 4" class="sd-panel-footer-link" t-on-click="() => this.openCaseTasks()">
+              View All Tasks →
+            </div>
+          </div>
+
+          <!-- Brochures -->
+          <div class="scd-panel" t-if="c.brochures">
+            <div class="scd-panel-header">
+              <h3><i class="fa fa-file-pdf-o scd-panel-icon scd-text-purple"/> Brochures</h3>
+              <span t-attf-class="scd-badge {{c.brochures.sent ? 'scd-badge-green' : 'scd-badge-grey'}}">
+                Info Brochure <t t-esc="c.brochures.sent ? 'Sent' : 'Not Sent'"/>
+              </span>
+            </div>
+            <div class="scd-brochure-list">
+              <div class="scd-brochure-item scd-clickable" t-foreach="c.brochures.rows" t-as="b" t-key="'broch-' + b.id + b.kind"
+                 t-on-click="() => this.openBrochure(b.id)" title="Open document">
+                  <i class="fa fa-file-pdf-o"/>
+                  <span class="scd-brochure-name"><t t-esc="b.name"/></span>
+                  <span class="scd-chip"><t t-esc="b.kind"/></span>
+                  <i class="fa fa-chevron-right scd-brochure-arrow"/>
+              </div>
+              <div class="scd-empty" t-if="!c.brochures.rows.length">No brochures attached</div>
+            </div>
+          </div>
+
+          <!-- Consent Documents -->
+          <div class="scd-panel" t-if="c.consents">
+            <div class="scd-panel-header">
+              <h3><i class="fa fa-pencil-square-o scd-panel-icon scd-text-teal"/> Consent Documents</h3>
+            </div>
+            <table class="scd-table">
+              <thead><tr><th>Reference</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr t-foreach="c.consents.rows" t-as="s" t-key="'sign-' + s.id" t-on-click="() => this.openSignRequest(s.id)">
+                  <td><t t-esc="s.reference"/></td>
+                  <td><span t-attf-class="scd-badge {{s.completed ? 'scd-badge-green' : 'scd-badge-amber'}}"><t t-esc="s.completed ? 'Completed' : 'Pending'"/></span></td>
+                </tr>
+                <tr t-if="!c.consents.rows.length"><td colspan="2" class="scd-empty">No consent documents</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Post-Op Consults -->
+          <div class="scd-panel" t-if="c.postop">
+            <div class="scd-panel-header">
+              <h3><i class="fa fa-stethoscope scd-panel-icon scd-text-indigo"/> Post-Op Consults</h3>
+            </div>
+            <table class="scd-table">
+              <thead><tr><th>Label</th><th>Planned Date</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr t-foreach="c.postop.rows" t-as="p" t-key="'postop-' + p.id" t-on-click="() => this.openPostopConsult(p.id)">
+                  <td><t t-esc="p.label"/></td>
+                  <td><t t-esc="formatDate(p.planned_date)"/></td>
+                  <td><span t-attf-class="scd-badge {{p.done ? 'scd-badge-green' : 'scd-badge-amber'}}"><t t-esc="p.done ? 'Done' : 'Pending'"/></span></td>
+                </tr>
+                <tr t-if="!c.postop.rows.length"><td colspan="3" class="scd-empty">No post-op consults</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Financial -->
+          <div class="scd-panel" t-if="c.financial">
+            <div class="scd-panel-header">
+              <h3><i class="fa fa-euro scd-panel-icon scd-text-green"/> Financial</h3>
+            </div>
+            <div class="scd-fin-summary">
+              <div class="scd-fin-stat">
+                <label>Total Invoiced</label>
+                <span><t t-esc="formatMoney(c.financial.total_invoiced)"/></span>
+              </div>
+              <div class="scd-fin-stat">
+                <label>Total Paid</label>
+                <span class="scd-text-green"><t t-esc="formatMoney(c.financial.total_paid)"/></span>
+              </div>
+              <div class="scd-fin-stat">
+                <label>Outstanding</label>
+                <span t-attf-class="{{c.financial.total_outstanding > 0 ? 'scd-text-red' : ''}}"><t t-esc="formatMoney(c.financial.total_outstanding)"/></span>
+              </div>
+            </div>
+
+            <div class="scd-fee-grid" t-if="c.financial.detail">
+              <div class="scd-fee-item">
+                <label>Doctor Fee</label>
+                <span><t t-esc="formatMoney(c.financial.detail.doctor_fee)"/></span>
+              </div>
+              <div class="scd-fee-item">
+                <label>Hospital Fee</label>
+                <span><t t-esc="formatMoney(c.financial.detail.hospital_fee)"/></span>
+                <span t-attf-class="scd-badge scd-badge-sm {{c.financial.detail.hospital_fee_paid ? 'scd-badge-green' : 'scd-badge-amber'}}">
+                  <t t-esc="c.financial.detail.hospital_fee_paid ? 'Paid' : 'Unpaid'"/>
+                </span>
+              </div>
+              <div class="scd-fee-item">
+                <label>Expected Settlement</label>
+                <span><t t-esc="formatMoney(c.financial.detail.expected_settlement)"/></span>
+              </div>
+              <div class="scd-fee-item">
+                <label>BV Fee</label>
+                <span t-attf-class="scd-badge scd-badge-sm {{c.financial.detail.honorarium_paid ? 'scd-badge-green' : 'scd-badge-amber'}}">
+                  <t t-esc="c.financial.detail.honorarium_paid ? 'Paid' : 'Unpaid'"/>
+                </span>
+              </div>
+            </div>
+
+            <div class="scd-reimburse-box" t-if="c.financial.detail and c.financial.detail.is_reimbursed_surgery">
+              <i class="fa fa-shield"/>
+              <div>
+                <b>Reimbursed Surgery</b>
+                <div t-if="c.financial.detail.reimbursed_supplement_description">
+                  Supplement: <t t-esc="c.financial.detail.reimbursed_supplement_description"/>
+                  — <t t-esc="formatMoney(c.financial.detail.reimbursed_supplement_amount)"/>
+                </div>
+              </div>
+            </div>
+
+            <table class="scd-table scd-table-mt">
+              <thead><tr><th>Invoice</th><th>Date</th><th>Amount</th><th>Paid</th><th>Status</th></tr></thead>
+              <tbody>
+                <tr t-foreach="c.financial.rows" t-as="r" t-key="'cinv-' + r.id" t-on-click="() => this.openInvoice(r.id)">
+                  <td><t t-esc="r.number"/></td>
+                  <td><t t-esc="formatDate(r.date)"/></td>
+                  <td><t t-esc="formatMoney(r.amount_total)"/></td>
+                  <td t-attf-class="{{r.amount_paid > 0 ? 'scd-text-green' : ''}}"><t t-esc="formatMoney(r.amount_paid)"/></td>
+                  <td><span t-attf-class="scd-badge {{paymentBadgeClass(r.payment_state)}}"><t t-esc="r.payment_label"/></span></td>
+                </tr>
+                <tr t-if="!c.financial.rows.length"><td colspan="5" class="scd-empty">No invoices yet</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+        </div>
+
+        <!-- ── SIDEBAR COLUMN ── -->
+        <div class="scd-col-side">
+
+          <!-- Schedule & Admission -->
+            <div class="scd-panel" id="scd-schedule-panel" t-if="c.schedule">
+              <div class="scd-panel-header">
+                <h3><i class="fa fa-calendar-check-o scd-panel-icon scd-text-blue"/> Schedule &amp; Admission</h3>
+              </div>
+            <div class="scd-side-list">
+              <div class="scd-side-item"><label>Time Slot</label><span><t t-esc="c.schedule.time_slot or '-'"/></span></div>
+              <div class="scd-side-item"><label>End Time</label><span><t t-esc="c.schedule.end_time or '-'"/></span></div>
+              <div class="scd-side-item"><label>Duration</label><span><t t-esc="formatDuration(c.schedule.duration_hours)"/></span></div>
+              <div class="scd-side-item"><label>Operating Block</label><span><t t-esc="c.schedule.operating_block or '-'"/></span></div>
+              <div class="scd-side-item"><label>Location</label><span><t t-esc="c.case.hospital or '-'"/></span></div>
+              <div class="scd-side-item"><label>Admission Type</label><span><t t-esc="c.schedule.admission_type or '-'"/></span></div>
+              <div class="scd-side-item"><label>Admission Point</label><span><t t-esc="c.schedule.admission_point or '-'"/></span></div>
+            </div>
+          </div>
+
+          <!-- Additional Procedures -->
+          <!-- Additional Procedures -->
+          <div class="scd-panel" t-if="c.additional_procedures and c.additional_procedures.length">
+            <div class="scd-panel-header">
+              <h3><i class="fa fa-plus-square scd-panel-icon scd-text-purple"/> Additional Procedures</h3>
+            </div>
+            <div class="scd-tag-list">
+              <span class="scd-chip scd-chip-lg" t-foreach="c.additional_procedures" t-as="p" t-key="'addp-' + p_index"><t t-esc="p"/></span>
+            </div>
+          </div>
+
+          <!-- Quick Note (synced with this case's "Notes" tab / notes field) -->
+          <div class="scd-panel scd-notes-panel">
+            <div class="scd-panel-header">
+              <h3><i class="fa fa-sticky-note-o scd-panel-icon scd-text-amber"/> Quick Note</h3>
+            </div>
+            <textarea class="scd-notes-textarea" placeholder="Write a note for the team…"
+                      t-model="state.noteText" t-att-disabled="state.postingNote"/>
+            <div class="scd-notes-actions">
+              <button class="scd-notes-btn" t-on-click="postQuickNote"
+                      t-att-disabled="!state.noteText.trim() or state.postingNote">
+                <i t-attf-class="fa {{state.postingNote ? 'fa-spinner fa-spin' : 'fa-check'}}"/>
+                <t t-esc="state.postingNote ? 'Saving…' : 'Save Note'"/>
+              </button>
+            </div>
+          </div>
+
+          <!-- Case Readiness — quick checklist built from the KPI / brochure /
+               consent / post-op / financial data already loaded above -->
+          <div class="scd-panel scd-readiness-panel" t-if="c.kpis">
+            <div class="scd-panel-header">
+              <h3><i class="fa fa-check-circle-o scd-panel-icon scd-text-green"/> Case Readiness</h3>
+              <span class="scd-readiness-pct"><t t-esc="caseReadinessPct()"/>%</span>
+            </div>
+            <div class="scd-readiness-track">
+              <div class="scd-readiness-fill" t-attf-style="width: {{caseReadinessPct()}}%"/>
+            </div>
+            <div class="scd-readiness-list">
+              <div class="scd-readiness-item" t-foreach="caseReadinessItems()" t-as="item" t-key="'ready-' + item_index">
+                <div t-attf-class="scd-readiness-icon {{item.done ? 'scd-readiness-icon-done' : 'scd-readiness-icon-pending'}}">
+                  <i t-attf-class="fa {{item.done ? 'fa-check' : item.icon}}"/>
+                </div>
+                <div class="scd-readiness-info">
+                  <span class="scd-readiness-label"><t t-esc="item.label"/></span>
+                  <span t-attf-class="scd-readiness-detail {{item.done ? 'scd-text-green' : 'scd-text-amber'}}"><t t-esc="item.detail"/></span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Next Post-Op Consult — only shown when there's something to remind about -->
+          <div class="scd-panel scd-next-postop-panel" t-if="nextPostopConsult()">
+            <div class="scd-panel-header">
+              <h3><i class="fa fa-stethoscope scd-panel-icon scd-text-purple"/> Next Post-Op Consult</h3>
+            </div>
+            <t t-set="np" t-value="nextPostopConsult()"/>
+            <div class="scd-next-postop-body">
+              <div class="scd-next-postop-label"><t t-esc="np.label"/></div>
+              <div class="scd-next-postop-date">
+                <i class="fa fa-calendar-o"/> <t t-esc="formatDate(np.planned_date)"/>
+              </div>
+              <span t-attf-class="scd-badge scd-badge-sm {{postopCountdownLabel(np.planned_date).includes('overdue') ? 'scd-badge-red' : 'scd-badge-amber'}}">
+                <t t-esc="postopCountdownLabel(np.planned_date)"/>
+              </span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </t>
+
+</t>
+
+</templates>

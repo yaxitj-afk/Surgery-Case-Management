@@ -1,0 +1,153 @@
+<?xml version="1.0" encoding="utf-8"?>
+<odoo>
+    <record id="view_clinic_surgery_procedure_form" model="ir.ui.view">
+        <field name="name">clinic.surgery.procedure.form</field>
+        <field name="model">clinic.surgery.procedure</field>
+        <field name="arch" type="xml">
+            <form string="Surgery Procedure">
+                <header>
+                    <button name="action_confirm"
+                            string="Confirm"
+                            type="object"
+                            class="oe_highlight"
+                            invisible="state != 'draft'"/>
+                    <button name="action_set_draft"
+                            string="Reset to Draft"
+                            type="object"
+                            class="btn-secondary"
+                            invisible="state != 'confirmed'"/>
+                    <field name="state" widget="statusbar" statusbar_visible="draft,confirmed"/>
+                </header>
+                <sheet>
+                    <div class="oe_title">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name" placeholder="Procedure name"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group string="Info">
+                            <field name="surgeon_id"/>
+                            <field name="anesthesia_type"/>
+                            <field name="surgery_duration_hours" widget="float_time"/>
+                        </group>
+                        <group string="Fees">
+                            <field name="doctor_fee"/>
+                            <field name="hospital_fee"/>
+                            <field name="product_tmpl_id"/>
+                        </group>
+                    </group>
+
+                    <notebook>
+                        <page string="Task Templates" name="tasks">
+                            <field name="task_ids">
+                                <list editable="bottom">
+                                    <field name="sequence" widget="handle"/>
+                                    <field name="name"/>
+                                    <field name="responsible" required="1"/>
+                                    <field name="deadline_days_before"
+                                           string="Days Before Surgery"/>
+                                    <field name="description"/>
+                                </list>
+                            </field>
+                        </page>
+
+                        <page string="Consent Templates (IC)" name="consent_templates">
+                            <div class="alert alert-info d-flex align-items-start gap-2 mb-3" role="alert">
+                                <i class="fa fa-info-circle fa-lg mt-1"/>
+                                <div>
+                                    <strong>Informed Consent (IC) Requirements</strong>
+                                    <div class="text-muted">
+                                        Add all Odoo Sign templates required for this procedure
+                                        (e.g. procedure IC + implant IC). These are sent
+                                        automatically when <strong>"Send Consent"</strong> is
+                                        triggered on the surgery case.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <label for="sign_template_ids" class="o_form_label fw-bold mb-2">
+                                <i class="fa fa-file-text-o me-1"/>Required Sign Templates
+                            </label>
+                            <field name="sign_template_ids" widget="many2many_tags"/>
+
+                            <div class="alert alert-warning d-flex align-items-center gap-2 mt-3 mb-0"
+                                 role="alert" invisible="sign_template_ids">
+                                <i class="fa fa-exclamation-triangle"/>
+                                <span>No consent templates added yet — "Send Consent" will have nothing to send until at
+                                    least one template is added here.
+                                </span>
+                            </div>
+                            <group>
+                                <field name="consent_deadline_days"/>
+                            </group>
+                        </page>
+
+                        <page string="Brochures" name="brochures">
+                            <group>
+                                <field name="info_brochures"
+                                       widget="many2many_tags"
+                                       options="{'no_create': True}"
+                                       domain="[('mimetype', '=', 'application/pdf')]"/>
+
+                                <field name="postop_brochure_ids"
+                                       widget="many2many_tags"
+                                       options="{'no_create': True}"
+                                       domain="[('mimetype', '=', 'application/pdf')]"/>
+                            </group>
+                        </page>
+                        <page string="Pre-op Instructions" name="preop_instructions">
+                            <div class="alert alert-info mb-3">
+                                <i class="fa fa-info-circle me-1"/>
+                                This content replaces the generic pre-op email text and is sent
+                                automatically to the patient (D-1 by default, configurable in
+                                Settings → Surgery Automation). Leave empty to use the default
+                                generic instructions instead.
+                            </div>
+                            <field name="preop_instruction_body"/>
+                        </page>
+                        <page string="Post-op Schedule (Template)" name="postop_template">
+                            <field name="postop_consult_ids">
+                                <list editable="bottom">
+                                    <field name="label" placeholder="e.g. Dressing removal"/>
+                                    <field name="responsible_id"/>
+                                    <field name="days_after" string="Days After Surgery"/>
+                                    <field name="is_fixed_day" string="Fixed Day?"/>
+                                    <field name="window_days" string="Window ± days" invisible="is_fixed_day"/>
+                                </list>
+                            </field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <chatter/>
+            </form>
+        </field>
+    </record>
+
+    <!-- ═══════════════════════════════════════════════════════════
+         SURGERY PROCEDURE LIST
+    ═══════════════════════════════════════════════════════════ -->
+    <record id="view_clinic_surgery_procedure_list" model="ir.ui.view">
+        <field name="name">clinic.surgery.procedure.list</field>
+        <field name="model">clinic.surgery.procedure</field>
+        <field name="arch" type="xml">
+            <list string="Surgery Procedures">
+                <field name="name"/>
+                <field name="doctor_fee"/>
+                <field name="hospital_fee"/>
+                <field name="anesthesia_type"/>
+            </list>
+        </field>
+    </record>
+
+    <record id="action_clinic_surgery_procedure" model="ir.actions.act_window">
+        <field name="name">Surgery Procedures</field>
+        <field name="res_model">clinic.surgery.procedure</field>
+        <field name="view_mode">list,form</field>
+        <field name="help" type="html">
+            <p class="o_view_nocontent_smiling_face">
+                Create your first surgery procedure
+            </p>
+        </field>
+    </record>
+</odoo>
